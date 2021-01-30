@@ -1,7 +1,7 @@
 local Library =
     loadstring(
     game:HttpGet(
-        "https://raw.githubusercontent.com/Zexylz/Sword-Art-Online-Project-Eternity/main/adnasijdjiasdjhasbdbasdnasndasdjkhasdjkasjdasijhndasjdasldkjaskldjaslkdjalkdjslkdjalskdjlkasdjlkasdjlaksjdlkadjlaksdjlaksdjlkasdjlkasjdlkasjdlkasjdlaksdjlaksdjlkasjdklasjdlkajlkdjaslkdjakld?token=AQR5VFUE4AMTRUSULOWP3P3ACUW4A",
+        "https://raw.githubusercontent.com/Zexylz/Sword-Art-Online-Project-Eternity/main/adnasijdjiasdjhasbdbasdnasndasdjkhasdjkasjdasijhndasjdasldkjaskldjaslkdjalkdjslkdjalskdjlkasdjlkasdjlaksjdlkadjlaksdjlaksdjlkasdjlkasjdlkasjdlkasjdlaksdjlaksdjlkasjdklasjdlkajlkdjaslkdjakld?token=AQR5VFTMBAEFW5SKHKXYUOLACWGDG",
         true
     )
 )()
