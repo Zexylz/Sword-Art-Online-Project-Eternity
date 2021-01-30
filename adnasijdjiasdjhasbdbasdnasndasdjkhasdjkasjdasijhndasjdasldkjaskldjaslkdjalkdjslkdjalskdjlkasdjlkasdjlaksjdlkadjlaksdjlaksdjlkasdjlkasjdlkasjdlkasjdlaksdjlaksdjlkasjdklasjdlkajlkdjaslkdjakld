@@ -1,837 +1,2394 @@
-local lib = {}
-local ts = game:GetService("TweenService")
-local UIS = game:GetService("UserInputService")
-local players = game:GetService("Players")
-local player = players.LocalPlayer
-local character = player.Character
-local rs = game:GetService("RunService")
+local library = {flags = {}, windows = {}, open = true}
 
-for _,v in pairs(game:GetService("CoreGui"):GetChildren()) do
-	if v:IsA("ScreenGui") and v.Name == "screen" then
-		v:Destroy()
-	end
+--Services
+local runService = game:GetService "RunService"
+local tweenService = game:GetService "TweenService"
+local textService = game:GetService "TextService"
+local inputService = game:GetService "UserInputService"
+
+--Locals
+local dragging, dragInput, dragStart, startPos, dragObject
+
+local blacklistedKeys = {
+    --add or remove keys if you find the need to
+    Enum.KeyCode.Unknown,
+    Enum.KeyCode.W,
+    Enum.KeyCode.A,
+    Enum.KeyCode.S,
+    Enum.KeyCode.D,
+    Enum.KeyCode.Slash,
+    Enum.KeyCode.Tab,
+    Enum.KeyCode.Backspace,
+    Enum.KeyCode.Escape
+}
+local whitelistedMouseinputs = {
+    --add or remove mouse inputs if you find the need to
+    Enum.UserInputType.MouseButton1,
+    Enum.UserInputType.MouseButton2,
+    Enum.UserInputType.MouseButton3
+}
+
+--Functions
+local function round(num, bracket)
+    bracket = bracket or 1
+    local a = math.floor(num / bracket + (math.sign(num) * 0.5)) * bracket
+    if a < 0 then
+        a = a + bracket
+    end
+    return a
 end
 
-local screen = Instance.new("ScreenGui")
-screen.Parent = game.CoreGui
-screen.Name = "screen"
-
-local Theme = 
-	{
-		main = 
-		{
-			["Background"] = Color3.fromRGB(0, 0, 0),
-			["SectionRGB"] = Color3.fromRGB(25, 25, 25),
-			["SectionBar"] = Color3.fromRGB(15, 15, 15),
-			["DropdownRGB"] = Color3.fromRGB(35, 35, 35),
-			["ToggleRGB"] = Color3.fromRGB(75, 0, 130),
-			["SliderColor"] = Color3.fromRGB(75, 0, 130),
-			["LineRGB"] = Color3.fromRGB(75, 0, 130),
-			["Font"] = Enum.Font.SourceSansBold,
-			["TOGGLEUI"] = Enum.KeyCode.RightShift
-
-		}
-	}
-
-local function MakeDraggable(topbarobject, object)
-	local Dragging = nil
-	local DragInput = nil
-	local DragStart = nil
-	local StartPosition = nil
-
-	local function Update(input)
-		local Delta = input.Position - DragStart
-		object.Position = UDim2.new(StartPosition.X.Scale, StartPosition.X.Offset + Delta.X, StartPosition.Y.Scale, StartPosition.Y.Offset + Delta.Y)
-	end
-
-	topbarobject.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-			Dragging = true
-			DragStart = input.Position
-			StartPosition = object.Position
-
-			input.Changed:Connect(function()
-				if input.UserInputState == Enum.UserInputState.End then
-					Dragging = false
-				end
-			end)
-		end
-	end)
-
-	topbarobject.InputChanged:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-			DragInput = input
-		end
-	end)
-
-	UIS.InputChanged:Connect(function(input)
-		if input == DragInput and Dragging then
-			Update(input)
-		end
-	end)
-end
-
-local UIListLayout = Instance.new("UIListLayout")
-local UIPadding = Instance.new("UIPadding")
-UIListLayout.Parent = screen
-UIListLayout.FillDirection = Enum.FillDirection.Horizontal
-UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-UIListLayout.Padding = UDim.new(0.0199999996, 0)
-
-UIPadding.Parent = screen
-UIPadding.PaddingLeft = UDim.new(0, 10)
-UIPadding.PaddingTop = UDim.new(0, 20)
-
-function lib:CreateWindow(name, isOpen)
-	local Topbar = Instance.new("ImageLabel")
-	local topbartitle = Instance.new("TextLabel")
-	local topbardrop = Instance.new("ImageButton")
-	local topbardroplabel = Instance.new("TextLabel")
-	local HideRounding = Instance.new("Frame")
-	local content = Instance.new("Frame")
-	local contentlist = Instance.new("UIListLayout")
-
-	Topbar.Parent = screen
-	Topbar.Name = name
-	Topbar.BackgroundColor3 = Theme.main.Background
-	Topbar.AnchorPoint = Vector2.new(0.5, 0)
-	Topbar.Position =  UDim2.new(0.28412503, 0, 0.186182737, 0)
-	Topbar.BackgroundTransparency = 1
-	Topbar.Size = UDim2.new(0, 200, 0, 35)
-	Topbar.Image = "rbxassetid://3570695787"
-	Topbar.ImageColor3 = Theme.main.Background
-	Topbar.ScaleType = Enum.ScaleType.Slice
-	Topbar.SliceCenter = Rect.new(100, 100, 100, 100)
-	Topbar.SliceScale = 0.050
-	MakeDraggable(Topbar, Topbar)
-
-	topbartitle.Name = "topbartitle"
-	topbartitle.Parent = Topbar
-	topbartitle.AnchorPoint = Vector2.new(0.5, 0.5)
-	topbartitle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-	topbartitle.BackgroundTransparency = 1.000
-	topbartitle.Position = UDim2.new(0.431, 0, 0.5, 0)
-	topbartitle.Size = UDim2.new(0.739, 0, 1, 0)
-	topbartitle.Font = Enum.Font.SourceSansBold
-	topbartitle.Text = name
-	topbartitle.TextColor3 = Color3.fromRGB(250, 250, 250)
-	topbartitle.TextSize = 22.000
-	topbartitle.TextWrapped = true
-	topbartitle.TextXAlignment = Enum.TextXAlignment.Left
-
-	topbardrop.Parent = Topbar
-	topbardrop.Name = "drop"
-	topbardrop.AnchorPoint = Vector2.new(0, 0.5)
-	topbardrop.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-	topbardrop.BackgroundTransparency = 1.000
-	topbardrop.Position = UDim2.new(1, -30, 0.5, 0)
-	topbardrop.Size = UDim2.new(0, 25, 0, 25)
-
-	topbardroplabel.Name = "topbardroplabel"
-	topbardroplabel.Parent = topbardrop
-	topbardroplabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-	topbardroplabel.BackgroundTransparency = 1.000
-	topbardroplabel.Position = UDim2.new(-0.400000006, 0, -0.119999997, 0)
-	topbardroplabel.Size = UDim2.new(0, 37, 0, 29)
-	topbardroplabel.Font = Enum.Font.SourceSans
-	topbardroplabel.Text = "+"
-	topbardroplabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-	topbardroplabel.TextSize = 25.000
-
-	HideRounding.Name = "HideRounding"
-	HideRounding.Parent = Topbar
-	HideRounding.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-	HideRounding.BorderSizePixel = 0
-	HideRounding.Position = UDim2.new(0, 0, 1, -5)
-	HideRounding.Size = UDim2.new(1, 0, 0, 5)
-
-	content.Name = "content"
-	content.Parent = Topbar
-	content.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-	content.BorderSizePixel = 0
-	content.Position = UDim2.new(0, 0, 0.900001764, 0)
-	content.Size = UDim2.new(1, 0, -5.31553698, 221)
-
-	contentlist.Name = "contentlist"
-	contentlist.Parent = content
-    contentlist.SortOrder = Enum.SortOrder.LayoutOrder
-    
-    UIS.InputBegan:Connect(function(key)
-        if key.KeyCode == Theme.main.TOGGLEUI then
-            screen.Enabled = not screen.Enabled
+local function keyCheck(x, x1)
+    for _, v in next, x1 do
+        if v == x then
+            return true
         end
-    end)
-
-	local sect = {}
-	function sect:CreateSection(name, isOpen)
-		local sectionsize = 35
-
-		local Section = Instance.new("ImageLabel")
-		local SectionTopBar = Instance.new("ImageLabel")
-		local SectionTitle = Instance.new("TextLabel")
-		local DropdownMain = Instance.new("ImageButton")
-		local Inside = Instance.new("ImageLabel")
-		local SectionList = Instance.new("UIListLayout")	
-
-		Section.Parent = content
-		Section.Name = "Section"
-		Section.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-		Section.BackgroundTransparency = 1.000
-		Section.BorderSizePixel = 0
-		Section.ClipsDescendants = true
-		Section.LayoutOrder = 1
-		Section.Size = UDim2.new(1, 0, 0, 35)
-		Section.Image = "rbxassetid://4641600283"
-		Section.ImageColor3 = Theme.main.SectionRGB
-		Section.ScaleType = Enum.ScaleType.Slice
-		Section.SliceScale = 0.050
-
-		SectionTopBar.Name = "SectionTopBar"
-		SectionTopBar.Parent = Section
-		SectionTopBar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-		SectionTopBar.BackgroundTransparency = 1.000
-		SectionTopBar.BorderSizePixel = 0
-		SectionTopBar.LayoutOrder = -1
-		SectionTopBar.Position = UDim2.new(-0.150000006, 0, 0, 0)
-		SectionTopBar.Size = UDim2.new(1, 0, 0, 35)
-		SectionTopBar.Image = "rbxassetid://4641600283"
-		SectionTopBar.ImageColor3 = Theme.main.SectionBar
-		SectionTopBar.ScaleType = Enum.ScaleType.Slice
-		SectionTopBar.SliceScale = 0.050
-
-		SectionTitle.Name = "SectionTitle"
-		SectionTitle.Parent = SectionTopBar
-		SectionTitle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-		SectionTitle.BackgroundTransparency = 1.000
-		SectionTitle.BorderSizePixel = 0
-		SectionTitle.Position = UDim2.new(0, 10, 0, 0)
-		SectionTitle.Size = UDim2.new(0.93, -5, 1, 0)
-		SectionTitle.Font = Theme.main.Font
-		SectionTitle.Text = name
-		SectionTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-		SectionTitle.TextSize = 13
-		SectionTitle.TextXAlignment = Enum.TextXAlignment.Left
-
-		DropdownMain.Name = "DropdownMain"
-		DropdownMain.Parent = SectionTopBar
-		DropdownMain.AnchorPoint = Vector2.new(0, 0.5)
-		DropdownMain.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-		DropdownMain.BackgroundTransparency = 1.000
-		DropdownMain.Position = UDim2.new(1, -30, 0.5, -1)
-		DropdownMain.Size = UDim2.new(0, 25, 0, 25)--1, 0, -3.29108334, 150
-
-		Inside.Name = "Inside"
-		Inside.Parent = DropdownMain
-		Inside.AnchorPoint = Vector2.new(0.5, 0)
-		Inside.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-		Inside.BackgroundTransparency = 1.000
-		Inside.Position = UDim2.new(0.340000004, 0, 0.460000008, -2)
-		Inside.Selectable = true
-		Inside.Size = UDim2.new(0, 8, 0, 6)
-		Inside.Image = "rbxassetid://4695336826"
-		Inside.ScaleType = Enum.ScaleType.Fit
-
-		SectionList.Name = "SectionList"
-		SectionList.Parent = Section
-		SectionList.HorizontalAlignment = Enum.HorizontalAlignment.Center
-		SectionList.SortOrder = Enum.SortOrder.LayoutOrder
-		SectionList.Padding = UDim.new(0, 2)
-
-		local toggle = false
-		local function resize()
-			toggle = not toggle
-			ts:Create(Inside, TweenInfo.new(.4), {
-				Rotation = toggle and 180 or 0
-			}):Play()
-
-			ts:Create(Section, TweenInfo.new(.3), {
-				Size = toggle and UDim2.new(1, 0, 0, sectionsize) or UDim2.new(1, 0, 0, 35)
-			}):Play()
-		end
-		spawn(function()
-			wait(.1)
-			if isOpen == true then
-				resize()
-			end
-		end)
-		DropdownMain.MouseButton1Click:Connect(resize)
-
-		local Element = {}
-		function Element:CreateToggle(name, func)
-			sectionsize = sectionsize + 40
-			local Toggleframe = Instance.new("ImageLabel")
-			local ToggleTitle = Instance.new("TextLabel")
-			local Unfill = Instance.new("ImageButton")
-			local Fill = Instance.new("ImageButton")
-
-			Toggleframe.Name = "Toggleframe"
-			Toggleframe.Parent = Section
-			Toggleframe.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-			Toggleframe.BackgroundTransparency = 1.000
-			Toggleframe.Position = UDim2.new(0.0850000009, 0, 0, 0)
-			Toggleframe.Size = UDim2.new(0.889999986, 0, -0.0151539939, 35)
-			Toggleframe.Image = "rbxassetid://3570695787"
-			Toggleframe.ImageColor3 = Color3.fromRGB(25, 25, 25)
-			Toggleframe.ScaleType = Enum.ScaleType.Slice
-			Toggleframe.SliceCenter = Rect.new(100, 100, 100, 100)
-			Toggleframe.SliceScale = 0.050
-
-			ToggleTitle.Name = "ToggleTitle"
-			ToggleTitle.Parent = Toggleframe
-			ToggleTitle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-			ToggleTitle.BackgroundTransparency = 1.000
-			ToggleTitle.BorderSizePixel = 0
-			ToggleTitle.Size = UDim2.new(0, 139, 0, 20)
-			ToggleTitle.Position = UDim2.new(0.006, 0, 0.165, 0)
-			ToggleTitle.Font = Theme.main.Font
-			ToggleTitle.Text = name
-			ToggleTitle.TextColor3 = Color3.fromRGB(185, 185, 185)
-			ToggleTitle.TextSize = 14.000
-			ToggleTitle.TextXAlignment = Enum.TextXAlignment.Left
-
-			Unfill.Name = "Unfill"
-			Unfill.Parent = Toggleframe
-			Unfill.AnchorPoint = Vector2.new(1, 0.5)
-			Unfill.BackgroundColor3 = Color3.fromRGB(67, 66, 68)
-			Unfill.BackgroundTransparency = 1.000
-			Unfill.LayoutOrder = 20
-			Unfill.Position = UDim2.new(0.99580133, 0, 0.5, 0)
-			Unfill.Size = UDim2.new(0, 26, 0, 26)
-			Unfill.ZIndex = 2
-			Unfill.Image = "rbxassetid://3926311105"
-			Unfill.ImageColor3 = Color3.fromRGB(65, 65, 65)
-			Unfill.ImageRectOffset = Vector2.new(940, 784)
-			Unfill.ImageRectSize = Vector2.new(48, 48)
-
-			Fill.Name = "Fill"
-			Fill.Parent = Unfill
-			Fill.AnchorPoint = Vector2.new(0.5, 0.5)
-			Fill.BackgroundTransparency = 1.000
-			Fill.LayoutOrder = 6
-			Fill.Position = UDim2.new(0.5, 0, 0.5, 0)
-			Fill.Size = UDim2.new(0, 0, 0, 0)--0,26,0,26
-			Fill.Visible = true
-			Fill.ZIndex = 2
-			Fill.Image = "rbxassetid://3926311105"
-			Fill.ImageRectOffset = Vector2.new(4, 836)
-			Fill.ImageRectSize = Vector2.new(48, 48)
-			Fill.ImageTransparency = 1
-			Fill.ImageColor3 = Color3.fromRGB(85, 0, 127)
-
-			local functoggle = false
-			local filltoggle = false
-			Toggleframe.InputBegan:connect(function(input)
-				if input.UserInputType == Enum.UserInputType.MouseButton1 then
-					functoggle = not functoggle
-					if functoggle then
-						ts:Create(Fill, TweenInfo.new(.2), {ImageTransparency = 0}):Play()
-						ts:Create(Fill, TweenInfo.new(.5), {Size = UDim2.new(0, 26, 0, 26)}):Play()
-					elseif not functoggle then
-						ts:Create(Fill, TweenInfo.new(.5), {Size = UDim2.new(0, 0, 0, 0)}):Play()
-						ts:Create(Fill, TweenInfo.new(.2), {ImageTransparency = 1}):Play()
-					end
-					func(functoggle)
-				end
-			end)
-
-			Toggleframe.MouseEnter:connect(function()
-				ts:Create(Unfill, TweenInfo.new(.5), {ImageColor3 = Color3.fromRGB(150,150,150)}):Play()
-			end)
-			Toggleframe.MouseLeave:connect(function()
-				ts:Create(Unfill, TweenInfo.new(.5), {ImageColor3 = Color3.fromRGB(99,99,99)}):Play()
-			end)
-
-			function Element:CreateButton(name, func)
-				sectionsize = sectionsize + 40
-				local TextButton = Instance.new("ImageLabel")
-				local ButtonTitle = Instance.new("TextLabel")
-
-				TextButton.Name = "TextButton"
-				TextButton.Parent = Section
-				TextButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-				TextButton.BackgroundTransparency = 1.000
-				TextButton.Position = UDim2.new(0.0474999994, 0, 0.305253059, 0)
-				TextButton.Size = UDim2.new(0.905199587, 0, 0, 30)
-				TextButton.Image = "rbxassetid://3570695787"
-				TextButton.ImageColor3 = Color3.fromRGB(40, 40, 40)
-				TextButton.ScaleType = Enum.ScaleType.Slice
-				TextButton.SliceCenter = Rect.new(100, 100, 100, 100)
-				TextButton.SliceScale = 0.025
-
-				ButtonTitle.Name = "ButtonTitle"
-				ButtonTitle.Parent = TextButton
-				ButtonTitle.AnchorPoint = Vector2.new(0.5, 0.5)
-				ButtonTitle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-				ButtonTitle.BackgroundTransparency = 1.000
-				ButtonTitle.BorderSizePixel = 0
-				ButtonTitle.Position = UDim2.new(0.508, 0, 0.5, 0)
-				ButtonTitle.Size = UDim2.new(0, 178, 0, 30)
-				ButtonTitle.Font = Enum.Font.Gotham
-				ButtonTitle.Text = name
-				ButtonTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-				ButtonTitle.TextSize = 13.000
-				ButtonTitle.TextXAlignment = Enum.TextXAlignment.Center
-				TextButton.InputBegan:Connect(function(input)
-					if input.UserInputType == Enum.UserInputType.MouseButton1 then
-						func()
-					end
-				end)
-				TextButton.InputBegan:Connect(function(input)
-					if input.UserInputType == Enum.UserInputType.MouseButton1 then
-						ts:Create(TextButton, TweenInfo.new(.5), {ImageColor3 = Color3.fromRGB(85, 0, 127)}):Play()
-						wait(.4)
-						ts:Create(TextButton, TweenInfo.new(.5), {ImageColor3 = Color3.fromRGB(40,40,40)}):Play()
-					end
-				end)
-				TextButton.MouseEnter:connect(function()
-					ts:Create(TextButton, TweenInfo.new(.5), {ImageColor3 = Color3.fromRGB(60,60,60)}):Play()
-				end)
-				TextButton.MouseLeave:connect(function()
-					ts:Create(TextButton, TweenInfo.new(.5), {ImageColor3 = Color3.fromRGB(40,40,40)}):Play()
-				end)
-				function Element:CreateSlider(name, properties, callback)
-					sectionsize = sectionsize + 40
-					local NameSlider = Instance.new("Frame")
-					local Title = Instance.new("TextLabel")
-					local SliderBackground = Instance.new("ImageLabel")
-					local SliderIndicator = Instance.new("ImageLabel")
-					local CircleSelector = Instance.new("ImageLabel")
-					local SliderValue = Instance.new("ImageLabel")
-					local Value = Instance.new("TextBox")
-
-					local SliderDragging = false
-					local StartingValue = properties.preset
-
-					if StartingValue == nil then
-						StartingValue = properties.preset
-					end
-
-					NameSlider.Name = (name .. "Slider")
-					NameSlider.Parent = Section
-					NameSlider.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-					NameSlider.BackgroundTransparency = 1.000
-					NameSlider.Position = UDim2.new(0, 0, 0.497237563, 0)
-					NameSlider.Size = UDim2.new(0, 197, 0, 50)
-					NameSlider.ZIndex = 5
-
-					Title.Name = "Title"
-					Title.Parent = NameSlider
-					Title.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-					Title.BackgroundTransparency = 1.000
-					Title.BorderColor3 = Color3.fromRGB(27, 42, 53)
-					Title.Position = UDim2.new(0, 12, 0, 0)
-					Title.Size = UDim2.new(0, 121, 0, 35)
-					Title.ZIndex = 5
-					Title.Font = Theme.main.Font
-					Title.Text = name
-					Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-					Title.TextSize = 15.000
-					Title.TextXAlignment = Enum.TextXAlignment.Left
-
-					SliderBackground.Name = "SliderBackground"
-					SliderBackground.Parent = NameSlider
-					SliderBackground.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
-					SliderBackground.BackgroundTransparency = 1.000
-					SliderBackground.Position = UDim2.new(0.0600000359, 0, 0.699999988, 0)
-					SliderBackground.Size = UDim2.new(0, 169, 0, 4)
-					SliderBackground.ZIndex = 5
-					SliderBackground.Image = "rbxassetid://3570695787"
-					SliderBackground.ImageColor3 = Color3.fromRGB(55, 55, 55)
-					SliderBackground.ScaleType = Enum.ScaleType.Slice
-					SliderBackground.SliceCenter = Rect.new(100, 100, 100, 100)
-					SliderBackground.SliceScale = 0.150
-
-					SliderIndicator.Name = "SliderIndicator"
-					SliderIndicator.Parent = SliderBackground
-					SliderIndicator.BackgroundColor3 = Color3.fromRGB(55, 55, 55)
-					SliderIndicator.BackgroundTransparency = 1.000
-					SliderIndicator.Size = UDim2.new(((StartingValue or properties.min) - properties.min) / (properties.max - properties.min), 0, 1, 0)
-					SliderIndicator.ZIndex = 5
-					SliderIndicator.Image = "rbxassetid://3570695787"
-					SliderIndicator.ImageColor3 = Theme.main.SliderColor
-					SliderIndicator.ScaleType = Enum.ScaleType.Slice
-					SliderIndicator.SliceCenter = Rect.new(100, 100, 100, 100)
-					SliderIndicator.SliceScale = 0.150
-
-					CircleSelector.Name = "CircleSelector"
-					CircleSelector.Parent = SliderIndicator
-					CircleSelector.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-					CircleSelector.BackgroundTransparency = 1.000
-					CircleSelector.Position = UDim2.new(0.986565471, -7, 0.75, -7)
-					CircleSelector.Size = UDim2.new(0, 12, 0, 12)
-					CircleSelector.ZIndex = 5
-					CircleSelector.Image = "rbxassetid://3570695787"
-
-					SliderValue.Name = "SliderValue"
-					SliderValue.Parent = NameSlider
-					SliderValue.BackgroundColor3 = Color3.fromRGB(65, 65, 65)
-					SliderValue.BackgroundTransparency = 1.000
-					SliderValue.Position = UDim2.new(0.764771521, -12, 0.400000006, -12)
-					SliderValue.Size = UDim2.new(0, 42, 0, 19)
-					SliderValue.ZIndex = 5
-					SliderValue.Image = "rbxassetid://3570695787"
-					SliderValue.ImageColor3 = Color3.fromRGB(65, 65, 65)
-					SliderValue.ScaleType = Enum.ScaleType.Slice
-					SliderValue.SliceCenter = Rect.new(100, 100, 100, 100)
-					SliderValue.SliceScale = 0.030
-
-					Value.Name = "Value"
-					Value.Parent = SliderValue
-					Value.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-					Value.BackgroundTransparency = 1.000
-					Value.Size = UDim2.new(1, 0, 1, 0)
-					Value.ZIndex = 5
-					Value.Font = Theme.main.Font
-					Value.Text = tostring(StartingValue or properties.precise and tonumber(string.format("%.2f", StartingValue)))
-					Value.TextColor3 = Color3.fromRGB(255, 255, 255)
-					Value.TextSize = 14.000
-
-					local function Sliding(input)
-						local SliderPosition = UDim2.new(math.clamp((input.Position.X - SliderBackground.AbsolutePosition.X) / SliderBackground.AbsoluteSize.X, 0, 1), 0, 1, 0)
-						ts:Create(SliderIndicator, TweenInfo.new(0.02, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = SliderPosition}):Play()
-
-						local NonSliderproperties = math.floor(((SliderPosition.X.Scale * properties.max) / properties.max) * (properties.max - properties.min) + properties.min)
-						local Sliderproperties = ((SliderPosition.X.Scale * properties.max) / properties.max) * (properties.max - properties.min) + properties.min
-
-						local SlidingValue = (properties.precise and Sliderpropertiesor or NonSliderproperties)
-						SlidingValue = tonumber(string.format("%.2f", SlidingValue))
-
-						Value.Text = tostring(SlidingValue)
-						callback(SlidingValue)
-					end
-
-					Value.FocusLost:Connect(function()
-						if not tonumber(Value.Text) then
-							Value.Text = tostring(StartingValue or properties.precise and tonumber(string.format("%.2f", StartingValue)))
-						elseif Value.Text == "" or tonumber(Value.Text) <= properties.min then
-							Value.Text = properties.min
-						elseif Value.Text == "" or tonumber(Value.Text) >= properties.max then
-							Value.Text = properties.max
-						end
-
-						ts:Create(SliderIndicator, TweenInfo.new(0.02, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = UDim2.new(((tonumber(Value.Text) or properties.min) - properties.min) / (properties.max - properties.min), 0, 1, 0)}):Play()
-						callback(tonumber(Value.Text))
-					end)
-
-					CircleSelector.InputBegan:Connect(function(input)
-						if input.UserInputType == Enum.UserInputType.MouseButton1 then
-							SliderDragging = true
-						end
-					end)
-
-					CircleSelector.InputEnded:Connect(function(input)
-						if input.UserInputType == Enum.UserInputType.MouseButton1 then
-							SliderDragging = false
-						end
-					end)
-
-					CircleSelector.InputBegan:Connect(function(input)
-						if input.UserInputType == Enum.UserInputType.MouseButton1 then
-							Sliding(input)
-						end
-					end)
-
-					UIS.InputChanged:Connect(function(input)
-						if SliderDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-							Sliding(input)
-						end
-					end)
-
-					local function SetSliderValue(value)
-						Value.Text = value
-						ts:Create(SliderIndicator, TweenInfo.new(0.02, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = UDim2.new(((tonumber(Value.Text) or properties.min) - properties.min) / (properties.max - properties.min), 0, 1, 0)}):Play()
-						callback(tonumber(Value.Text))
-					end
-
-					callback(StartingValue)
-
-					return {
-						SetSliderValue = SetSliderValue
-					}
-				end
-
-				function Element:Box(label, val, callback)
-					sectionsize = sectionsize + 40
-					local TextBoxHolder = Instance.new("Frame")
-					local TextBoxBorder = Instance.new("ImageLabel")
-					local TextBoxFrame = Instance.new("ImageLabel")
-					local ValTextBox = Instance.new("TextBox")
-					local TextBoxLabel = Instance.new("TextLabel")
-
-					TextBoxHolder.Name = "TextBoxHolder"
-					TextBoxHolder.Parent = Section
-					TextBoxHolder.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-					TextBoxHolder.BorderSizePixel = 0
-					TextBoxHolder.Position = UDim2.new(0.25, 0, 0.492972195, 0)
-					TextBoxHolder.Size = UDim2.new(0.899999976, 0, 0, 35)
-
-					TextBoxBorder.Name = "TextBoxBorder"
-					TextBoxBorder.Parent = TextBoxHolder
-					TextBoxBorder.AnchorPoint = Vector2.new(0.5, 0.5)
-					TextBoxBorder.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-					TextBoxBorder.BackgroundTransparency = 1.000
-					TextBoxBorder.Position = UDim2.new(0.501388907, 0, 0.499999404, 0)
-					TextBoxBorder.Size = UDim2.new(0.997222245, 0, 0.949999988, 0)
-					TextBoxBorder.Image = "rbxassetid://3570695787"
-					TextBoxBorder.ImageColor3 = Color3.fromRGB(54, 54, 54)
-					TextBoxBorder.ScaleType = Enum.ScaleType.Slice
-					TextBoxBorder.SliceCenter = Rect.new(100, 100, 100, 100)
-					TextBoxBorder.SliceScale = 0.025
-
-					TextBoxFrame.Name = "TextBoxFrame"
-					TextBoxFrame.Parent = TextBoxBorder
-					TextBoxFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-					TextBoxFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-					TextBoxFrame.BackgroundTransparency = 1.000
-					TextBoxFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
-					TextBoxFrame.Size = UDim2.new(0.980000019, 0, 0.879999995, 0)
-					TextBoxFrame.Image = "rbxassetid://3570695787"
-					TextBoxFrame.ImageColor3 = Color3.fromRGB(20, 20, 20)
-					TextBoxFrame.ScaleType = Enum.ScaleType.Slice
-					TextBoxFrame.SliceCenter = Rect.new(100, 100, 100, 100)
-					TextBoxFrame.SliceScale = 0.025
-
-					ValTextBox.Name = "ValTextBox"
-					ValTextBox.Parent = TextBoxFrame
-					ValTextBox.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-					ValTextBox.BackgroundTransparency = 1.000
-					ValTextBox.BorderColor3 = Color3.fromRGB(27, 42, 53)
-					ValTextBox.Position = UDim2.new(0.0265194643, 0, 0, 0)
-					ValTextBox.Size = UDim2.new(0, 170, 0, 29)
-					ValTextBox.Font = Enum.Font.SourceSans
-					ValTextBox.PlaceholderColor3 = Color3.fromRGB(255, 255, 255)
-					ValTextBox.PlaceholderText = val
-					ValTextBox.Text = ""
-					ValTextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-					ValTextBox.TextSize = 18.000
-					ValTextBox.TextXAlignment = Enum.TextXAlignment.Left
-					ValTextBox.TextYAlignment = Enum.TextYAlignment.Bottom
-
-					TextBoxLabel.Name = "TextBoxLabel"
-					TextBoxLabel.Parent = TextBoxBorder
-					TextBoxLabel.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-					TextBoxLabel.BackgroundTransparency = 1.000
-					TextBoxLabel.Position = UDim2.new(0.042, 0, 0.03, 0)
-					TextBoxLabel.Size = UDim2.new(0, 48, 0, 12)
-					TextBoxLabel.Font = Enum.Font.SourceSansBold
-					TextBoxLabel.Text = label
-					TextBoxLabel.TextColor3 = Color3.fromRGB(144, 144, 144)
-					TextBoxLabel.TextSize = 13.000
-					TextBoxLabel.TextXAlignment = Enum.TextXAlignment.Left
-					TextBoxLabel.TextYAlignment = Enum.TextYAlignment.Center
-					ValTextBox.Focused:connect(function()
-						ts:Create(TextBoxBorder, TweenInfo.new(.3), {ImageColor3 = Color3.fromRGB(85, 0, 127)}):Play()
-					end)
-					ValTextBox.FocusLost:connect(function()
-						callback(ValTextBox.Text)
-						ts:Create(TextBoxBorder, TweenInfo.new(.3), {ImageColor3 = Color3.fromRGB(54, 54, 54)}):Play()
-					end)
-
-					local CurrentlyBinding = false
-					function Element:CreateKeybind(name, PresetBind, Keyboard, HoldMode, callback)
-						sectionsize = sectionsize + 30
-						local KeybindName = Instance.new("Frame")
-						local KeybindButtonBorder = Instance.new("ImageLabel")
-						local KeybindButton = Instance.new("TextButton")
-						local Title = Instance.new("TextLabel")
-
-						local OldBind = PresetBind.Name
-						local LoadFromPreset = false
-						local JustBinded = false
-
-						local NotAllowedKeys = {
-							Return = true,
-							Space = true,
-							Tab = true,
-							Unknown = true,
-							MouseButton1 = true
-						}
-
-						local AllowedMouseTypes = {
-							MouseButton2 = true,
-							MouseButton3 = true
-						}
-
-						local ShortenedNames = {
-							LeftShift = "LShift",
-							RightShift = "RShift",
-							LeftControl = "LCtrl",
-							RightControl = "RCtrl",
-							LeftAlt = "LAlt",
-							RightAlt = "RAlt",
-							CapsLock = "Caps",
-							One = "1",
-							Two = "2",
-							Three = "3",
-							Four = "4",
-							Five = "5",
-							Six = "6",
-							Seven = "7",
-							Eight = "8",
-							Nine = "9",
-							Zero = "0",
-							KeypadOne = "Num-1",
-							KeypadTwo = "Num-2",
-							KeypadThree = "Num-3",
-							KeypadFour = "Num-4",
-							KeypadFive = "Num-5",
-							KeypadSix = "Num-6",
-							KeypadSeven = "Num-7",
-							KeypadEight = "Num-8",
-							KeypadNine = "Num-9",
-							KeypadZero = "Num-0",
-							Minus = "-",
-							Equals = "=",
-							Tilde = "~",
-							LeftBracket = "[",
-							RightBracket = "]",
-							RightParenthesis = ")",
-							LeftParenthesis = "(",
-							Semicolon = ";",
-							Quote = "'",
-							BackSlash = "\\",
-							Comma = ",",
-							Period = ".",
-							Slash = "/",
-							Asterisk = "*",
-							Plus = "+",
-							Backquote = "`",
-							MouseButton1 = "M1",
-							MouseButton2 = "M2",
-							MouseButton3 = "M3"
-						}
-
-						KeybindName.Name = "Aimbot BindKeybind"
-						KeybindName.Parent = Section
-						KeybindName.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-						KeybindName.BackgroundTransparency = 1.000
-						KeybindName.Position = UDim2.new(0, 0, 0.138121545, 0)
-						KeybindName.Size = UDim2.new(0, 197, 0, 35)
-
-						KeybindButtonBorder.Name = "KeybindButtonBorder"
-						KeybindButtonBorder.Parent = KeybindName
-						KeybindButtonBorder.BackgroundColor3 = Color3.fromRGB(65, 65, 65)
-						KeybindButtonBorder.BackgroundTransparency = 1.000
-						KeybindButtonBorder.Position = UDim2.new(0, 139, 0, 5)
-						KeybindButtonBorder.Size = UDim2.new(0, 42, 0, 20)
-						KeybindButtonBorder.ZIndex = 5
-						KeybindButtonBorder.Image = "rbxassetid://3570695787"
-						KeybindButtonBorder.ImageColor3 = Color3.fromRGB(54, 54, 54)
-						KeybindButtonBorder.ScaleType = Enum.ScaleType.Slice
-						KeybindButtonBorder.SliceCenter = Rect.new(100, 100, 100, 100)
-						KeybindButtonBorder.SliceScale = 0.030
-
-						KeybindButton.Name = "KeybindButton"
-						KeybindButton.Parent = KeybindButtonBorder
-						KeybindButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-						KeybindButton.BackgroundTransparency = 1.000
-						KeybindButton.Size = UDim2.new(1, 0, 1, 0)
-						KeybindButton.ZIndex = 5
-						KeybindButton.Font = Enum.Font.SourceSansBold
-						KeybindButton.Text = "RShift"
-						KeybindButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-						KeybindButton.TextSize = 15.000
-						KeybindButton.TextWrapped = true
-
-						Title.Name = "Title"
-						Title.Parent = KeybindName
-						Title.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-						Title.BackgroundTransparency = 1.000
-						Title.Position = UDim2.new(0, 13, 0, 0)
-						Title.Size = UDim2.new(0, 151, 0, 30)
-						Title.ZIndex = 5
-						Title.Font = Enum.Font.SourceSansBold
-						Title.Text = name
-						Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-						Title.TextSize = 15.000
-						Title.TextXAlignment = Enum.TextXAlignment.Left
-
-						if LoadFromPreset then
-							KeybindButton.Text = PresetBind
-						end
-
-						if PresetBind == Enum.KeyCode.Unknown or PresetBind == "Unknown" then
-							KeybindButton.Text = "None"
-						end
-
-						KeybindButton.MouseButton1Click:Connect(function()
-							if CurrentlyBinding then return end
-
-							KeybindButton.Text = "..."
-
-							local Input, oof = UIS.InputBegan:wait()
-							CurrentlyBinding = true
-
-							if Input.KeyCode.Name == "BackSpace" or Input.KeyCode.Name == "Delete" then
-								KeybindButton.Text = "None"
-								OldBind = Enum.KeyCode.Unknown.Name
-								CurrentlyBinding = false
-								JustBinded = false
-								return
-							end
-							if (Input.UserInputType == Enum.UserInputType.Keyboard and (AllowedMouseTypes[Input.UserInputType.Name]) and (not KeyboardOnly)) or (Input.KeyCode and (not NotAllowedKeys[Input.KeyCode.Name])) then
-								local BindName = ((Input.UserInputType ~= Enum.UserInputType.Keyboard and Input.UserInputType.Name) or Input.KeyCode.Name)
-								KeybindButton.Text = ShortenedNames[BindName] or BindName
-								OldBind = BindName
-								CurrentlyBinding = false
-								JustBinded = true
-							else
-								KeybindButton.Text = ShortenedNames[OldBind] or OldBind
-								CurrentlyBinding = false
-							end
-						end)
-						if not HoldMode then
-							UIS.InputBegan:Connect(function(input, gpe)
-								if not gpe then
-									if UIS:GetFocusedTextBox() then return end
-									if OldBind == Enum.KeyCode.Unknown.Name then return end
-									if JustBinded then JustBinded = false return end
-
-									local BindName = ((input.UserInputType ~= Enum.UserInputType.Keyboard and input.UserInputType.Name) or input.KeyCode.Name)
-
-									if BindName == OldBind then 
-										callback()
-									end
-
-								end
-							end)
-						else
-							UIS.InputBegan:Connect(function(input, gpe)
-								if not gpe then
-									if UIS:GetFocusedTextBox() then return end
-									if OldBind == Enum.KeyCode.Unknown.Name then return end
-									if JustBinded then JustBinded = false return end
-
-									local BindName = ((input.UserInputType ~= Enum.UserInputType.Keyboard and input.UserInputType.Name) or input.KeyCode.Name)
-
-									if BindName == OldBind then
-										callback(true)
-									end			
-								end
-							end)
-
-							UIS.InputEnded:Connect(function(input, gpe)
-								if not gpe then
-									if UIS:GetFocusedTextBox() then return end
-									if OldBind == Enum.KeyCode.Unknown.Name then return end
-									if JustBinded then JustBinded = false return end
-
-									HoldModeToggled = false
-									local BindName = ((input.UserInputType ~= Enum.UserInputType.Keyboard and input.UserInputType.Name) or input.KeyCode.Name)
-
-									if BindName == OldBind then
-										callback(false)
-									end
-								end
-							end)
-
-						end
-					end
-				end	
-			end
-		end
-		return Element
-	end
-	return sect
+    end
 end
-return lib
+
+local function update(input)
+    local delta = input.Position - dragStart
+    local yPos = (startPos.Y.Offset + delta.Y) < -36 and -36 or startPos.Y.Offset + delta.Y
+    dragObject:TweenPosition(
+        UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, yPos),
+        "Out",
+        "Quint",
+        0.1,
+        true
+    )
+end
+
+--From: https://devforum.roblox.com/t/how-to-create-a-simple-rainbow-effect-using-tweenService/221849/2
+local chromaColor
+local rainbowTime = 5
+spawn(
+    function()
+        while wait() do
+            chromaColor = Color3.fromHSV(tick() % rainbowTime / rainbowTime, 1, 1)
+        end
+    end
+)
+
+function library:Create(class, properties)
+    properties = typeof(properties) == "table" and properties or {}
+    local inst = Instance.new(class)
+    for property, value in next, properties do
+        inst[property] = value
+    end
+    return inst
+end
+
+local function createOptionHolder(holderTitle, parent, parentTable, subHolder)
+    local size = subHolder and 34 or 40
+    parentTable.main =
+        library:Create(
+        "ImageButton",
+        {
+            LayoutOrder = subHolder and parentTable.position or 0,
+            Position = UDim2.new(0, 20 + (250 * (parentTable.position or 0)), 0, 20),
+            Size = UDim2.new(0, 230, 0, size),
+            BackgroundTransparency = 1,
+            Image = "rbxassetid://3570695787",
+            ImageColor3 = Color3.fromRGB(20, 20, 20),
+            ScaleType = Enum.ScaleType.Slice,
+            SliceCenter = Rect.new(100, 100, 100, 100),
+            SliceScale = 0.04,
+            ClipsDescendants = true,
+            Parent = parent
+        }
+    )
+
+    local round
+    if not subHolder then
+        round =
+            library:Create(
+            "ImageLabel",
+            {
+                Size = UDim2.new(1, 0, 0, size),
+                BackgroundTransparency = 1,
+                Image = "rbxassetid://3570695787",
+                ImageColor3 = parentTable.open and
+                    (subHolder and Color3.fromRGB(16, 16, 16) or Color3.fromRGB(10, 10, 10)) or
+                    (subHolder and Color3.fromRGB(10, 10, 10) or Color3.fromRGB(6, 6, 6)),
+                ScaleType = Enum.ScaleType.Slice,
+                SliceCenter = Rect.new(100, 100, 100, 100),
+                SliceScale = 0.04,
+                Parent = parentTable.main
+            }
+        )
+    end
+
+    local title =
+        library:Create(
+        "TextLabel",
+        {
+            Size = UDim2.new(1, 0, 0, size),
+            BackgroundTransparency = subHolder and 0 or 1,
+            BackgroundColor3 = Color3.fromRGB(10, 10, 10),
+            BorderSizePixel = 0,
+            Text = holderTitle,
+            TextSize = subHolder and 16 or 17,
+            Font = Enum.Font.GothamBold,
+            TextColor3 = Color3.fromRGB(255, 255, 255),
+            Parent = parentTable.main
+        }
+    )
+
+    local closeHolder =
+        library:Create(
+        "Frame",
+        {
+            Position = UDim2.new(1, 0, 0, 0),
+            Size = UDim2.new(-1, 0, 1, 0),
+            SizeConstraint = Enum.SizeConstraint.RelativeYY,
+            BackgroundTransparency = 1,
+            Parent = title
+        }
+    )
+
+    local close =
+        library:Create(
+        "ImageLabel",
+        {
+            AnchorPoint = Vector2.new(0.5, 0.5),
+            Position = UDim2.new(0.5, 0, 0.5, 0),
+            Size = UDim2.new(1, -size - 10, 1, -size - 10),
+            Rotation = parentTable.open and 90 or 180,
+            BackgroundTransparency = 1,
+            Image = "rbxassetid://4918373417",
+            ImageColor3 = parentTable.open and Color3.fromRGB(50, 50, 50) or Color3.fromRGB(30, 30, 30),
+            ScaleType = Enum.ScaleType.Fit,
+            Parent = closeHolder
+        }
+    )
+
+    parentTable.content =
+        library:Create(
+        "Frame",
+        {
+            Position = UDim2.new(0, 0, 0, size),
+            Size = UDim2.new(1, 0, 1, -size),
+            BackgroundTransparency = 1,
+            Parent = parentTable.main
+        }
+    )
+
+    local layout =
+        library:Create(
+        "UIListLayout",
+        {
+            SortOrder = Enum.SortOrder.LayoutOrder,
+            Parent = parentTable.content
+        }
+    )
+
+    layout.Changed:connect(
+        function()
+            parentTable.content.Size = UDim2.new(1, 0, 0, layout.AbsoluteContentSize.Y)
+            parentTable.main.Size =
+                #parentTable.options > 0 and parentTable.open and
+                UDim2.new(0, 230, 0, layout.AbsoluteContentSize.Y + size) or
+                UDim2.new(0, 230, 0, size)
+        end
+    )
+
+    if not subHolder then
+        library:Create(
+            "UIPadding",
+            {
+                Parent = parentTable.content
+            }
+        )
+
+        title.InputBegan:connect(
+            function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    dragObject = parentTable.main
+                    dragging = true
+                    dragStart = input.Position
+                    startPos = dragObject.Position
+                end
+            end
+        )
+        title.InputChanged:connect(
+            function(input)
+                if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+                    dragInput = input
+                end
+            end
+        )
+        title.InputEnded:connect(
+            function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    dragging = false
+                end
+            end
+        )
+    end
+
+    closeHolder.InputBegan:connect(
+        function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                parentTable.open = not parentTable.open
+                tweenService:Create(
+                    close,
+                    TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                    {
+                        Rotation = parentTable.open and 90 or 180,
+                        ImageColor3 = parentTable.open and Color3.fromRGB(50, 50, 50) or Color3.fromRGB(30, 30, 30)
+                    }
+                ):Play()
+                if subHolder then
+                    tweenService:Create(
+                        title,
+                        TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                        {
+                            BackgroundColor3 = parentTable.open and Color3.fromRGB(16, 16, 16) or
+                                Color3.fromRGB(10, 10, 10)
+                        }
+                    ):Play()
+                else
+                    tweenService:Create(
+                        round,
+                        TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                        {ImageColor3 = parentTable.open and Color3.fromRGB(10, 10, 10) or Color3.fromRGB(6, 6, 6)}
+                    ):Play()
+                end
+                parentTable.main:TweenSize(
+                    #parentTable.options > 0 and parentTable.open and
+                        UDim2.new(0, 230, 0, layout.AbsoluteContentSize.Y + size) or
+                        UDim2.new(0, 230, 0, size),
+                    "Out",
+                    "Quad",
+                    0.2,
+                    true
+                )
+            end
+        end
+    )
+
+    function parentTable:SetTitle(newTitle)
+        title.Text = tostring(newTitle)
+    end
+
+    return parentTable
+end
+
+local function createLabel(option, parent)
+    local main =
+        library:Create(
+        "TextLabel",
+        {
+            LayoutOrder = option.position,
+            Size = UDim2.new(1, 0, 0, 26),
+            BackgroundTransparency = 1,
+            Text = " " .. option.text,
+            TextSize = 17,
+            Font = Enum.Font.Gotham,
+            TextColor3 = Color3.fromRGB(255, 255, 255),
+            TextXAlignment = Enum.TextXAlignment.Left,
+            Parent = parent.content
+        }
+    )
+
+    setmetatable(
+        option,
+        {
+            __newindex = function(t, i, v)
+                if i == "Text" then
+                    main.Text = " " .. tostring(v)
+                end
+            end
+        }
+    )
+end
+
+function createToggle(option, parent)
+    local main =
+        library:Create(
+        "TextLabel",
+        {
+            LayoutOrder = option.position,
+            Size = UDim2.new(1, 0, 0, 31),
+            BackgroundTransparency = 1,
+            Text = " " .. option.text,
+            TextSize = 17,
+            Font = Enum.Font.Gotham,
+            TextColor3 = Color3.fromRGB(255, 255, 255),
+            TextXAlignment = Enum.TextXAlignment.Left,
+            Parent = parent.content
+        }
+    )
+
+    local tickboxOutline =
+        library:Create(
+        "ImageLabel",
+        {
+            Position = UDim2.new(1, -6, 0, 4),
+            Size = UDim2.new(-1, 10, 1, -10),
+            SizeConstraint = Enum.SizeConstraint.RelativeYY,
+            BackgroundTransparency = 1,
+            Image = "rbxassetid://3570695787",
+            ImageColor3 = option.state and Color3.fromRGB(255, 65, 65) or Color3.fromRGB(100, 100, 100),
+            ScaleType = Enum.ScaleType.Slice,
+            SliceCenter = Rect.new(100, 100, 100, 100),
+            SliceScale = 0.02,
+            Parent = main
+        }
+    )
+
+    local tickboxInner =
+        library:Create(
+        "ImageLabel",
+        {
+            Position = UDim2.new(0, 2, 0, 2),
+            Size = UDim2.new(1, -4, 1, -4),
+            BackgroundTransparency = 1,
+            Image = "rbxassetid://3570695787",
+            ImageColor3 = option.state and Color3.fromRGB(255, 65, 65) or Color3.fromRGB(20, 20, 20),
+            ScaleType = Enum.ScaleType.Slice,
+            SliceCenter = Rect.new(100, 100, 100, 100),
+            SliceScale = 0.02,
+            Parent = tickboxOutline
+        }
+    )
+
+    local checkmarkHolder =
+        library:Create(
+        "Frame",
+        {
+            Position = UDim2.new(0, 4, 0, 4),
+            Size = option.state and UDim2.new(1, -8, 1, -8) or UDim2.new(0, 0, 1, -8),
+            BackgroundTransparency = 1,
+            ClipsDescendants = true,
+            Parent = tickboxOutline
+        }
+    )
+
+    local checkmark =
+        library:Create(
+        "ImageLabel",
+        {
+            Size = UDim2.new(1, 0, 1, 0),
+            SizeConstraint = Enum.SizeConstraint.RelativeYY,
+            BackgroundTransparency = 1,
+            Image = "rbxassetid://4919148038",
+            ImageColor3 = Color3.fromRGB(20, 20, 20),
+            Parent = checkmarkHolder
+        }
+    )
+
+    local inContact
+    main.InputBegan:connect(
+        function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                option:SetState(not option.state)
+            end
+            if input.UserInputType == Enum.UserInputType.MouseMovement then
+                inContact = true
+                if not option.state then
+                    tweenService:Create(
+                        tickboxOutline,
+                        TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                        {ImageColor3 = Color3.fromRGB(140, 140, 140)}
+                    ):Play()
+                end
+            end
+        end
+    )
+
+    main.InputEnded:connect(
+        function(input)
+            if input.UserInputType == Enum.UserInputType.MouseMovement then
+                inContact = true
+                if not option.state then
+                    tweenService:Create(
+                        tickboxOutline,
+                        TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                        {ImageColor3 = Color3.fromRGB(100, 100, 100)}
+                    ):Play()
+                end
+            end
+        end
+    )
+
+    function option:SetState(state)
+        library.flags[self.flag] = state
+        self.state = state
+        checkmarkHolder:TweenSize(
+            option.state and UDim2.new(1, -8, 1, -8) or UDim2.new(0, 0, 1, -8),
+            "Out",
+            "Quad",
+            0.2,
+            true
+        )
+        tweenService:Create(
+            tickboxInner,
+            TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {ImageColor3 = state and Color3.fromRGB(255, 65, 65) or Color3.fromRGB(20, 20, 20)}
+        ):Play()
+        if state then
+            tweenService:Create(
+                tickboxOutline,
+                TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                {ImageColor3 = Color3.fromRGB(255, 65, 65)}
+            ):Play()
+        else
+            if inContact then
+                tweenService:Create(
+                    tickboxOutline,
+                    TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                    {ImageColor3 = Color3.fromRGB(140, 140, 140)}
+                ):Play()
+            else
+                tweenService:Create(
+                    tickboxOutline,
+                    TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                    {ImageColor3 = Color3.fromRGB(100, 100, 100)}
+                ):Play()
+            end
+        end
+        self.callback(state)
+    end
+
+    if option.state then
+        delay(
+            1,
+            function()
+                option.callback(true)
+            end
+        )
+    end
+
+    setmetatable(
+        option,
+        {
+            __newindex = function(t, i, v)
+                if i == "Text" then
+                    main.Text = " " .. tostring(v)
+                end
+            end
+        }
+    )
+end
+
+function createButton(option, parent)
+    local main =
+        library:Create(
+        "TextLabel",
+        {
+            ZIndex = 2,
+            LayoutOrder = option.position,
+            Size = UDim2.new(1, 0, 0, 34),
+            BackgroundTransparency = 1,
+            Text = " " .. option.text,
+            TextSize = 17,
+            Font = Enum.Font.Gotham,
+            TextColor3 = Color3.fromRGB(255, 255, 255),
+            Parent = parent.content
+        }
+    )
+
+    local round =
+        library:Create(
+        "ImageLabel",
+        {
+            AnchorPoint = Vector2.new(0.5, 0.5),
+            Position = UDim2.new(0.5, 0, 0.5, 0),
+            Size = UDim2.new(1, -12, 1, -10),
+            BackgroundTransparency = 1,
+            Image = "rbxassetid://3570695787",
+            ImageColor3 = Color3.fromRGB(40, 40, 40),
+            ScaleType = Enum.ScaleType.Slice,
+            SliceCenter = Rect.new(100, 100, 100, 100),
+            SliceScale = 0.02,
+            Parent = main
+        }
+    )
+
+    local inContact
+    local clicking
+    main.InputBegan:connect(
+        function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                library.flags[option.flag] = true
+                clicking = true
+                tweenService:Create(
+                    round,
+                    TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                    {ImageColor3 = Color3.fromRGB(255, 65, 65)}
+                ):Play()
+                option.callback()
+            end
+            if input.UserInputType == Enum.UserInputType.MouseMovement then
+                inContact = true
+                tweenService:Create(
+                    round,
+                    TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                    {ImageColor3 = Color3.fromRGB(60, 60, 60)}
+                ):Play()
+            end
+        end
+    )
+
+    main.InputEnded:connect(
+        function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                clicking = false
+                if inContact then
+                    tweenService:Create(
+                        round,
+                        TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                        {ImageColor3 = Color3.fromRGB(60, 60, 60)}
+                    ):Play()
+                else
+                    tweenService:Create(
+                        round,
+                        TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                        {ImageColor3 = Color3.fromRGB(40, 40, 40)}
+                    ):Play()
+                end
+            end
+            if input.UserInputType == Enum.UserInputType.MouseMovement then
+                inContact = false
+                if not clicking then
+                    tweenService:Create(
+                        round,
+                        TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                        {ImageColor3 = Color3.fromRGB(40, 40, 40)}
+                    ):Play()
+                end
+            end
+        end
+    )
+end
+
+local function createBind(option, parent)
+    local binding
+    local holding
+    local loop
+    local text =
+        string.match(option.key, "Mouse") and string.sub(option.key, 1, 5) .. string.sub(option.key, 12, 13) or
+        option.key
+
+    local main =
+        library:Create(
+        "TextLabel",
+        {
+            LayoutOrder = option.position,
+            Size = UDim2.new(1, 0, 0, 33),
+            BackgroundTransparency = 1,
+            Text = " " .. option.text,
+            TextSize = 17,
+            Font = Enum.Font.Gotham,
+            TextColor3 = Color3.fromRGB(255, 255, 255),
+            TextXAlignment = Enum.TextXAlignment.Left,
+            Parent = parent.content
+        }
+    )
+
+    local round =
+        library:Create(
+        "ImageLabel",
+        {
+            Position = UDim2.new(1, -6, 0, 4),
+            Size = UDim2.new(
+                0,
+                -textService:GetTextSize(text, 16, Enum.Font.Gotham, Vector2.new(9e9, 9e9)).X - 16,
+                1,
+                -10
+            ),
+            SizeConstraint = Enum.SizeConstraint.RelativeYY,
+            BackgroundTransparency = 1,
+            Image = "rbxassetid://3570695787",
+            ImageColor3 = Color3.fromRGB(40, 40, 40),
+            ScaleType = Enum.ScaleType.Slice,
+            SliceCenter = Rect.new(100, 100, 100, 100),
+            SliceScale = 0.02,
+            Parent = main
+        }
+    )
+
+    local bindinput =
+        library:Create(
+        "TextLabel",
+        {
+            Size = UDim2.new(1, 0, 1, 0),
+            BackgroundTransparency = 1,
+            Text = text,
+            TextSize = 16,
+            Font = Enum.Font.Gotham,
+            TextColor3 = Color3.fromRGB(255, 255, 255),
+            Parent = round
+        }
+    )
+
+    local inContact
+    main.InputBegan:connect(
+        function(input)
+            if input.UserInputType == Enum.UserInputType.MouseMovement then
+                inContact = true
+                if not binding then
+                    tweenService:Create(
+                        round,
+                        TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                        {ImageColor3 = Color3.fromRGB(60, 60, 60)}
+                    ):Play()
+                end
+            end
+        end
+    )
+
+    main.InputEnded:connect(
+        function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                binding = true
+                bindinput.Text = "..."
+                tweenService:Create(
+                    round,
+                    TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                    {ImageColor3 = Color3.fromRGB(255, 65, 65)}
+                ):Play()
+            end
+            if input.UserInputType == Enum.UserInputType.MouseMovement then
+                inContact = false
+                if not binding then
+                    tweenService:Create(
+                        round,
+                        TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                        {ImageColor3 = Color3.fromRGB(40, 40, 40)}
+                    ):Play()
+                end
+            end
+        end
+    )
+
+    inputService.InputBegan:connect(
+        function(input)
+            if inputService:GetFocusedTextBox() then
+                return
+            end
+            if (input.KeyCode.Name == option.key or input.UserInputType.Name == option.key) and not binding then
+                if option.hold then
+                    loop =
+                        runService.Heartbeat:connect(
+                        function()
+                            if binding then
+                                option.callback(true)
+                                loop:Disconnect()
+                                loop = nil
+                            else
+                                option.callback()
+                            end
+                        end
+                    )
+                else
+                    option.callback()
+                end
+            elseif binding then
+                local key
+                pcall(
+                    function()
+                        if not keyCheck(input.KeyCode, blacklistedKeys) then
+                            key = input.KeyCode
+                        end
+                    end
+                )
+                pcall(
+                    function()
+                        if keyCheck(input.UserInputType, whitelistedMouseinputs) and not key then
+                            key = input.UserInputType
+                        end
+                    end
+                )
+                key = key or option.key
+                option:SetKey(key)
+            end
+        end
+    )
+
+    inputService.InputEnded:connect(
+        function(input)
+            if
+                input.KeyCode.Name == option.key or input.UserInputType.Name == option.key or
+                    input.UserInputType.Name == "MouseMovement"
+             then
+                if loop then
+                    loop:Disconnect()
+                    loop = nil
+                    option.callback(true)
+                end
+            end
+        end
+    )
+
+    function option:SetKey(key)
+        binding = false
+        if loop then
+            loop:Disconnect()
+            loop = nil
+        end
+        self.key = key or self.key
+        self.key = self.key.Name or self.key
+        library.flags[self.flag] = self.key
+        if string.match(self.key, "Mouse") then
+            bindinput.Text = string.sub(self.key, 1, 5) .. string.sub(self.key, 12, 13)
+        else
+            bindinput.Text = self.key
+        end
+        tweenService:Create(
+            round,
+            TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {ImageColor3 = inContact and Color3.fromRGB(60, 60, 60) or Color3.fromRGB(40, 40, 40)}
+        ):Play()
+        round.Size =
+            UDim2.new(
+            0,
+            -textService:GetTextSize(bindinput.Text, 15, Enum.Font.Gotham, Vector2.new(9e9, 9e9)).X - 16,
+            1,
+            -10
+        )
+    end
+end
+
+local function createSlider(option, parent)
+    local main =
+        library:Create(
+        "Frame",
+        {
+            LayoutOrder = option.position,
+            Size = UDim2.new(1, 0, 0, 50),
+            BackgroundTransparency = 1,
+            Parent = parent.content
+        }
+    )
+
+    local title =
+        library:Create(
+        "TextLabel",
+        {
+            Position = UDim2.new(0, 0, 0, 4),
+            Size = UDim2.new(1, 0, 0, 20),
+            BackgroundTransparency = 1,
+            Text = " " .. option.text,
+            TextSize = 17,
+            Font = Enum.Font.Gotham,
+            TextColor3 = Color3.fromRGB(255, 255, 255),
+            TextXAlignment = Enum.TextXAlignment.Left,
+            Parent = main
+        }
+    )
+
+    local slider =
+        library:Create(
+        "ImageLabel",
+        {
+            Position = UDim2.new(0, 10, 0, 34),
+            Size = UDim2.new(1, -20, 0, 5),
+            BackgroundTransparency = 1,
+            Image = "rbxassetid://3570695787",
+            ImageColor3 = Color3.fromRGB(30, 30, 30),
+            ScaleType = Enum.ScaleType.Slice,
+            SliceCenter = Rect.new(100, 100, 100, 100),
+            SliceScale = 0.02,
+            Parent = main
+        }
+    )
+
+    local fill =
+        library:Create(
+        "ImageLabel",
+        {
+            BackgroundTransparency = 1,
+            Image = "rbxassetid://3570695787",
+            ImageColor3 = Color3.fromRGB(60, 60, 60),
+            ScaleType = Enum.ScaleType.Slice,
+            SliceCenter = Rect.new(100, 100, 100, 100),
+            SliceScale = 0.02,
+            Parent = slider
+        }
+    )
+
+    local circle =
+        library:Create(
+        "ImageLabel",
+        {
+            AnchorPoint = Vector2.new(0.5, 0.5),
+            Position = UDim2.new((option.value - option.min) / (option.max - option.min), 0, 0.5, 0),
+            SizeConstraint = Enum.SizeConstraint.RelativeYY,
+            BackgroundTransparency = 1,
+            Image = "rbxassetid://3570695787",
+            ImageColor3 = Color3.fromRGB(60, 60, 60),
+            ScaleType = Enum.ScaleType.Slice,
+            SliceCenter = Rect.new(100, 100, 100, 100),
+            SliceScale = 1,
+            Parent = slider
+        }
+    )
+
+    local valueRound =
+        library:Create(
+        "ImageLabel",
+        {
+            Position = UDim2.new(1, -6, 0, 4),
+            Size = UDim2.new(0, -60, 0, 18),
+            BackgroundTransparency = 1,
+            Image = "rbxassetid://3570695787",
+            ImageColor3 = Color3.fromRGB(40, 40, 40),
+            ScaleType = Enum.ScaleType.Slice,
+            SliceCenter = Rect.new(100, 100, 100, 100),
+            SliceScale = 0.02,
+            Parent = main
+        }
+    )
+
+    local inputvalue =
+        library:Create(
+        "TextBox",
+        {
+            Size = UDim2.new(1, 0, 1, 0),
+            BackgroundTransparency = 1,
+            Text = option.value,
+            TextColor3 = Color3.fromRGB(235, 235, 235),
+            TextSize = 15,
+            TextWrapped = true,
+            Font = Enum.Font.Gotham,
+            Parent = valueRound
+        }
+    )
+
+    if option.min >= 0 then
+        fill.Size = UDim2.new((option.value - option.min) / (option.max - option.min), 0, 1, 0)
+    else
+        fill.Position = UDim2.new((0 - option.min) / (option.max - option.min), 0, 0, 0)
+        fill.Size = UDim2.new(option.value / (option.max - option.min), 0, 1, 0)
+    end
+
+    local sliding
+    local inContact
+    main.InputBegan:connect(
+        function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                tweenService:Create(
+                    fill,
+                    TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                    {ImageColor3 = Color3.fromRGB(255, 65, 65)}
+                ):Play()
+                tweenService:Create(
+                    circle,
+                    TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                    {Size = UDim2.new(3.5, 0, 3.5, 0), ImageColor3 = Color3.fromRGB(255, 65, 65)}
+                ):Play()
+                sliding = true
+                option:SetValue(
+                    option.min +
+                        ((input.Position.X - slider.AbsolutePosition.X) / slider.AbsoluteSize.X) *
+                            (option.max - option.min)
+                )
+            end
+            if input.UserInputType == Enum.UserInputType.MouseMovement then
+                inContact = true
+                if not sliding then
+                    tweenService:Create(
+                        fill,
+                        TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                        {ImageColor3 = Color3.fromRGB(100, 100, 100)}
+                    ):Play()
+                    tweenService:Create(
+                        circle,
+                        TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                        {Size = UDim2.new(2.8, 0, 2.8, 0), ImageColor3 = Color3.fromRGB(100, 100, 100)}
+                    ):Play()
+                end
+            end
+        end
+    )
+
+    inputService.InputChanged:connect(
+        function(input)
+            if input.UserInputType == Enum.UserInputType.MouseMovement and sliding then
+                option:SetValue(
+                    option.min +
+                        ((input.Position.X - slider.AbsolutePosition.X) / slider.AbsoluteSize.X) *
+                            (option.max - option.min)
+                )
+            end
+        end
+    )
+
+    main.InputEnded:connect(
+        function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                sliding = false
+                if inContact then
+                    tweenService:Create(
+                        fill,
+                        TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                        {ImageColor3 = Color3.fromRGB(100, 100, 100)}
+                    ):Play()
+                    tweenService:Create(
+                        circle,
+                        TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                        {Size = UDim2.new(2.8, 0, 2.8, 0), ImageColor3 = Color3.fromRGB(100, 100, 100)}
+                    ):Play()
+                else
+                    tweenService:Create(
+                        fill,
+                        TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                        {ImageColor3 = Color3.fromRGB(60, 60, 60)}
+                    ):Play()
+                    tweenService:Create(
+                        circle,
+                        TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                        {Size = UDim2.new(0, 0, 0, 0), ImageColor3 = Color3.fromRGB(60, 60, 60)}
+                    ):Play()
+                end
+            end
+            if input.UserInputType == Enum.UserInputType.MouseMovement then
+                inContact = false
+                inputvalue:ReleaseFocus()
+                if not sliding then
+                    tweenService:Create(
+                        fill,
+                        TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                        {ImageColor3 = Color3.fromRGB(60, 60, 60)}
+                    ):Play()
+                    tweenService:Create(
+                        circle,
+                        TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                        {Size = UDim2.new(0, 0, 0, 0), ImageColor3 = Color3.fromRGB(60, 60, 60)}
+                    ):Play()
+                end
+            end
+        end
+    )
+
+    inputvalue.FocusLost:connect(
+        function()
+            tweenService:Create(
+                circle,
+                TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                {Size = UDim2.new(0, 0, 0, 0), ImageColor3 = Color3.fromRGB(60, 60, 60)}
+            ):Play()
+            option:SetValue(tonumber(inputvalue.Text) or option.value)
+        end
+    )
+
+    function option:SetValue(value)
+        value = round(value, option.float)
+        value = math.clamp(value, self.min, self.max)
+        circle:TweenPosition(UDim2.new((value - self.min) / (self.max - self.min), 0, 0.5, 0), "Out", "Quad", 0.1, true)
+        if self.min >= 0 then
+            fill:TweenSize(UDim2.new((value - self.min) / (self.max - self.min), 0, 1, 0), "Out", "Quad", 0.1, true)
+        else
+            fill:TweenPosition(UDim2.new((0 - self.min) / (self.max - self.min), 0, 0, 0), "Out", "Quad", 0.1, true)
+            fill:TweenSize(UDim2.new(value / (self.max - self.min), 0, 1, 0), "Out", "Quad", 0.1, true)
+        end
+        library.flags[self.flag] = value
+        self.value = value
+        inputvalue.Text = value
+        self.callback(value)
+    end
+end
+
+local function createList(option, parent, holder)
+    local valueCount = 0
+
+    local main =
+        library:Create(
+        "Frame",
+        {
+            LayoutOrder = option.position,
+            Size = UDim2.new(1, 0, 0, 52),
+            BackgroundTransparency = 1,
+            Parent = parent.content
+        }
+    )
+
+    local round =
+        library:Create(
+        "ImageLabel",
+        {
+            Position = UDim2.new(0, 6, 0, 4),
+            Size = UDim2.new(1, -12, 1, -10),
+            BackgroundTransparency = 1,
+            Image = "rbxassetid://3570695787",
+            ImageColor3 = Color3.fromRGB(40, 40, 40),
+            ScaleType = Enum.ScaleType.Slice,
+            SliceCenter = Rect.new(100, 100, 100, 100),
+            SliceScale = 0.02,
+            Parent = main
+        }
+    )
+
+    local title =
+        library:Create(
+        "TextLabel",
+        {
+            Position = UDim2.new(0, 12, 0, 8),
+            Size = UDim2.new(1, -24, 0, 14),
+            BackgroundTransparency = 1,
+            Text = option.text,
+            TextSize = 14,
+            Font = Enum.Font.GothamBold,
+            TextColor3 = Color3.fromRGB(140, 140, 140),
+            TextXAlignment = Enum.TextXAlignment.Left,
+            Parent = main
+        }
+    )
+
+    local listvalue =
+        library:Create(
+        "TextLabel",
+        {
+            Position = UDim2.new(0, 12, 0, 20),
+            Size = UDim2.new(1, -24, 0, 24),
+            BackgroundTransparency = 1,
+            Text = option.value,
+            TextSize = 18,
+            Font = Enum.Font.Gotham,
+            TextColor3 = Color3.fromRGB(255, 255, 255),
+            TextXAlignment = Enum.TextXAlignment.Left,
+            Parent = main
+        }
+    )
+
+    library:Create(
+        "ImageLabel",
+        {
+            Position = UDim2.new(1, -16, 0, 16),
+            Size = UDim2.new(-1, 32, 1, -32),
+            SizeConstraint = Enum.SizeConstraint.RelativeYY,
+            Rotation = 90,
+            BackgroundTransparency = 1,
+            Image = "rbxassetid://4918373417",
+            ImageColor3 = Color3.fromRGB(140, 140, 140),
+            ScaleType = Enum.ScaleType.Fit,
+            Parent = round
+        }
+    )
+
+    option.mainHolder =
+        library:Create(
+        "ImageButton",
+        {
+            ZIndex = 3,
+            Size = UDim2.new(0, 240, 0, 52),
+            BackgroundTransparency = 1,
+            Image = "rbxassetid://3570695787",
+            ImageTransparency = 1,
+            ImageColor3 = Color3.fromRGB(30, 30, 30),
+            ScaleType = Enum.ScaleType.Slice,
+            SliceCenter = Rect.new(100, 100, 100, 100),
+            SliceScale = 0.02,
+            Visible = false,
+            Parent = library.base
+        }
+    )
+
+    local content =
+        library:Create(
+        "ScrollingFrame",
+        {
+            ZIndex = 3,
+            Size = UDim2.new(1, 0, 1, 0),
+            BackgroundTransparency = 1,
+            BorderSizePixel = 0,
+            ScrollBarImageColor3 = Color3.fromRGB(),
+            ScrollBarThickness = 0,
+            ScrollingDirection = Enum.ScrollingDirection.Y,
+            Parent = option.mainHolder
+        }
+    )
+
+    library:Create(
+        "UIPadding",
+        {
+            PaddingTop = UDim.new(0, 6),
+            Parent = content
+        }
+    )
+
+    local layout =
+        library:Create(
+        "UIListLayout",
+        {
+            Parent = content
+        }
+    )
+
+    layout.Changed:connect(
+        function()
+            option.mainHolder.Size =
+                UDim2.new(0, 240, 0, (valueCount > 4 and (4 * 40) or layout.AbsoluteContentSize.Y) + 12)
+            content.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 12)
+        end
+    )
+
+    local inContact
+    round.InputBegan:connect(
+        function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                if library.activePopup then
+                    library.activePopup:Close()
+                end
+                local position = main.AbsolutePosition
+                option.mainHolder.Position = UDim2.new(0, position.X - 5, 0, position.Y - 10)
+                option.open = true
+                option.mainHolder.Visible = true
+                library.activePopup = option
+                content.ScrollBarThickness = 6
+                tweenService:Create(
+                    option.mainHolder,
+                    TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+                    {ImageTransparency = 0, Position = UDim2.new(0, position.X - 5, 0, position.Y - 4)}
+                ):Play()
+                tweenService:Create(
+                    option.mainHolder,
+                    TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out, 0, false, 0.1),
+                    {Position = UDim2.new(0, position.X - 5, 0, position.Y + 1)}
+                ):Play()
+                for _, label in next, content:GetChildren() do
+                    if label:IsA "TextLabel" then
+                        tweenService:Create(
+                            label,
+                            TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                            {BackgroundTransparency = 0, TextTransparency = 0}
+                        ):Play()
+                    end
+                end
+            end
+            if input.UserInputType == Enum.UserInputType.MouseMovement then
+                inContact = true
+                if not option.open then
+                    tweenService:Create(
+                        round,
+                        TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                        {ImageColor3 = Color3.fromRGB(60, 60, 60)}
+                    ):Play()
+                end
+            end
+        end
+    )
+
+    round.InputEnded:connect(
+        function(input)
+            if input.UserInputType == Enum.UserInputType.MouseMovement then
+                inContact = false
+                if not option.open then
+                    tweenService:Create(
+                        round,
+                        TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                        {ImageColor3 = Color3.fromRGB(40, 40, 40)}
+                    ):Play()
+                end
+            end
+        end
+    )
+
+    function option:AddValue(value)
+        valueCount = valueCount + 1
+        local label =
+            library:Create(
+            "TextLabel",
+            {
+                ZIndex = 3,
+                Size = UDim2.new(1, 0, 0, 40),
+                BackgroundColor3 = Color3.fromRGB(30, 30, 30),
+                BorderSizePixel = 0,
+                Text = "    " .. value,
+                TextSize = 14,
+                TextTransparency = self.open and 0 or 1,
+                Font = Enum.Font.Gotham,
+                TextColor3 = Color3.fromRGB(255, 255, 255),
+                TextXAlignment = Enum.TextXAlignment.Left,
+                Parent = content
+            }
+        )
+
+        local inContact
+        local clicking
+        label.InputBegan:connect(
+            function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    clicking = true
+                    tweenService:Create(
+                        label,
+                        TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                        {BackgroundColor3 = Color3.fromRGB(10, 10, 10)}
+                    ):Play()
+                    self:SetValue(value)
+                end
+                if input.UserInputType == Enum.UserInputType.MouseMovement then
+                    inContact = true
+                    if not clicking then
+                        tweenService:Create(
+                            label,
+                            TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                            {BackgroundColor3 = Color3.fromRGB(20, 20, 20)}
+                        ):Play()
+                    end
+                end
+            end
+        )
+
+        label.InputEnded:connect(
+            function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    clicking = false
+                    tweenService:Create(
+                        label,
+                        TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                        {BackgroundColor3 = inContact and Color3.fromRGB(20, 20, 20) or Color3.fromRGB(30, 30, 30)}
+                    ):Play()
+                end
+                if input.UserInputType == Enum.UserInputType.MouseMovement then
+                    inContact = false
+                    if not clicking then
+                        tweenService:Create(
+                            label,
+                            TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                            {BackgroundColor3 = Color3.fromRGB(30, 30, 30)}
+                        ):Play()
+                    end
+                end
+            end
+        )
+    end
+
+    if not table.find(option.values, option.value) then
+        option:AddValue(option.value)
+    end
+
+    for _, value in next, option.values do
+        option:AddValue(tostring(value))
+    end
+
+    function option:RemoveValue(value)
+        for _, label in next, content:GetChildren() do
+            if label:IsA "TextLabel" and label.Text == "	" .. value then
+                label:Destroy()
+                valueCount = valueCount - 1
+                break
+            end
+        end
+        if self.value == value then
+            self:SetValue("")
+        end
+    end
+
+    function option:SetValue(value)
+        library.flags[self.flag] = tostring(value)
+        self.value = tostring(value)
+        listvalue.Text = self.value
+        self.callback(value)
+    end
+
+    function option:Close()
+        library.activePopup = nil
+        self.open = false
+        content.ScrollBarThickness = 0
+        local position = main.AbsolutePosition
+        tweenService:Create(
+            round,
+            TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {ImageColor3 = inContact and Color3.fromRGB(60, 60, 60) or Color3.fromRGB(40, 40, 40)}
+        ):Play()
+        tweenService:Create(
+            self.mainHolder,
+            TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {ImageTransparency = 1, Position = UDim2.new(0, position.X - 5, 0, position.Y - 10)}
+        ):Play()
+        for _, label in next, content:GetChildren() do
+            if label:IsA "TextLabel" then
+                tweenService:Create(
+                    label,
+                    TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                    {BackgroundTransparency = 1, TextTransparency = 1}
+                ):Play()
+            end
+        end
+        wait(0.3)
+        --delay(0.3, function()
+        if not self.open then
+            self.mainHolder.Visible = false
+        end
+        --end)
+    end
+
+    return option
+end
+
+local function createBox(option, parent)
+    local main =
+        library:Create(
+        "Frame",
+        {
+            LayoutOrder = option.position,
+            Size = UDim2.new(1, 0, 0, 52),
+            BackgroundTransparency = 1,
+            Parent = parent.content
+        }
+    )
+
+    local outline =
+        library:Create(
+        "ImageLabel",
+        {
+            Position = UDim2.new(0, 6, 0, 4),
+            Size = UDim2.new(1, -12, 1, -10),
+            BackgroundTransparency = 1,
+            Image = "rbxassetid://3570695787",
+            ImageColor3 = Color3.fromRGB(60, 60, 60),
+            ScaleType = Enum.ScaleType.Slice,
+            SliceCenter = Rect.new(100, 100, 100, 100),
+            SliceScale = 0.02,
+            Parent = main
+        }
+    )
+
+    local round =
+        library:Create(
+        "ImageLabel",
+        {
+            Position = UDim2.new(0, 8, 0, 6),
+            Size = UDim2.new(1, -16, 1, -14),
+            BackgroundTransparency = 1,
+            Image = "rbxassetid://3570695787",
+            ImageColor3 = Color3.fromRGB(20, 20, 20),
+            ScaleType = Enum.ScaleType.Slice,
+            SliceCenter = Rect.new(100, 100, 100, 100),
+            SliceScale = 0.01,
+            Parent = main
+        }
+    )
+
+    local title =
+        library:Create(
+        "TextLabel",
+        {
+            Position = UDim2.new(0, 12, 0, 8),
+            Size = UDim2.new(1, -24, 0, 14),
+            BackgroundTransparency = 1,
+            Text = option.text,
+            TextSize = 14,
+            Font = Enum.Font.GothamBold,
+            TextColor3 = Color3.fromRGB(100, 100, 100),
+            TextXAlignment = Enum.TextXAlignment.Left,
+            Parent = main
+        }
+    )
+
+    local inputvalue =
+        library:Create(
+        "TextBox",
+        {
+            Position = UDim2.new(0, 12, 0, 20),
+            Size = UDim2.new(1, -24, 0, 24),
+            BackgroundTransparency = 1,
+            Text = option.value,
+            TextSize = 18,
+            Font = Enum.Font.Gotham,
+            TextColor3 = Color3.fromRGB(255, 255, 255),
+            TextXAlignment = Enum.TextXAlignment.Left,
+            TextWrapped = true,
+            Parent = main
+        }
+    )
+
+    local inContact
+    local focused
+    main.InputBegan:connect(
+        function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                if not focused then
+                    inputvalue:CaptureFocus()
+                end
+            end
+            if input.UserInputType == Enum.UserInputType.MouseMovement then
+                inContact = true
+                if not focused then
+                    tweenService:Create(
+                        outline,
+                        TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                        {ImageColor3 = Color3.fromRGB(100, 100, 100)}
+                    ):Play()
+                end
+            end
+        end
+    )
+
+    main.InputEnded:connect(
+        function(input)
+            if input.UserInputType == Enum.UserInputType.MouseMovement then
+                inContact = false
+                if not focused then
+                    tweenService:Create(
+                        outline,
+                        TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                        {ImageColor3 = Color3.fromRGB(60, 60, 60)}
+                    ):Play()
+                end
+            end
+        end
+    )
+
+    inputvalue.Focused:connect(
+        function()
+            focused = true
+            tweenService:Create(
+                outline,
+                TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                {ImageColor3 = Color3.fromRGB(255, 65, 65)}
+            ):Play()
+        end
+    )
+
+    inputvalue.FocusLost:connect(
+        function(enter)
+            focused = false
+            tweenService:Create(
+                outline,
+                TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                {ImageColor3 = Color3.fromRGB(60, 60, 60)}
+            ):Play()
+            option:SetValue(inputvalue.Text, enter)
+        end
+    )
+
+    function option:SetValue(value, enter)
+        library.flags[self.flag] = tostring(value)
+        self.value = tostring(value)
+        inputvalue.Text = self.value
+        self.callback(value, enter)
+    end
+end
+
+local function createColorPickerWindow(option)
+    option.mainHolder =
+        library:Create(
+        "ImageButton",
+        {
+            ZIndex = 3,
+            Size = UDim2.new(0, 240, 0, 180),
+            BackgroundTransparency = 1,
+            Image = "rbxassetid://3570695787",
+            ImageTransparency = 1,
+            ImageColor3 = Color3.fromRGB(30, 30, 30),
+            ScaleType = Enum.ScaleType.Slice,
+            SliceCenter = Rect.new(100, 100, 100, 100),
+            SliceScale = 0.02,
+            Parent = library.base
+        }
+    )
+
+    local hue, sat, val = Color3.toHSV(option.color)
+    hue, sat, val = hue == 0 and 1 or hue, sat + 0.005, val - 0.005
+    local editinghue
+    local editingsatval
+    local currentColor = option.color
+    local previousColors = {[1] = option.color}
+    local originalColor = option.color
+    local rainbowEnabled
+    local rainbowLoop
+
+    function option:updateVisuals(Color)
+        currentColor = Color
+        self.visualize2.ImageColor3 = Color
+        hue, sat, val = Color3.toHSV(Color)
+        hue = hue == 0 and 1 or hue
+        self.satval.BackgroundColor3 = Color3.fromHSV(hue, 1, 1)
+        self.hueSlider.Position = UDim2.new(1 - hue, 0, 0, 0)
+        self.satvalSlider.Position = UDim2.new(sat, 0, 1 - val, 0)
+    end
+
+    option.hue =
+        library:Create(
+        "ImageLabel",
+        {
+            ZIndex = 3,
+            AnchorPoint = Vector2.new(0, 1),
+            Position = UDim2.new(0, 8, 1, -8),
+            Size = UDim2.new(1, -100, 0, 22),
+            BackgroundTransparency = 1,
+            Image = "rbxassetid://3570695787",
+            ImageTransparency = 1,
+            ScaleType = Enum.ScaleType.Slice,
+            SliceCenter = Rect.new(100, 100, 100, 100),
+            SliceScale = 0.02,
+            Parent = option.mainHolder
+        }
+    )
+
+    local Gradient =
+        library:Create(
+        "UIGradient",
+        {
+            Color = ColorSequence.new(
+                {
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
+                    ColorSequenceKeypoint.new(0.157, Color3.fromRGB(255, 0, 255)),
+                    ColorSequenceKeypoint.new(0.323, Color3.fromRGB(0, 0, 255)),
+                    ColorSequenceKeypoint.new(0.488, Color3.fromRGB(0, 255, 255)),
+                    ColorSequenceKeypoint.new(0.66, Color3.fromRGB(0, 255, 0)),
+                    ColorSequenceKeypoint.new(0.817, Color3.fromRGB(255, 255, 0)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 0))
+                }
+            ),
+            Parent = option.hue
+        }
+    )
+
+    option.hueSlider =
+        library:Create(
+        "Frame",
+        {
+            ZIndex = 3,
+            Position = UDim2.new(1 - hue, 0, 0, 0),
+            Size = UDim2.new(0, 2, 1, 0),
+            BackgroundTransparency = 1,
+            BackgroundColor3 = Color3.fromRGB(30, 30, 30),
+            BorderColor3 = Color3.fromRGB(255, 255, 255),
+            Parent = option.hue
+        }
+    )
+
+    option.hue.InputBegan:connect(
+        function(Input)
+            if Input.UserInputType == Enum.UserInputType.MouseButton1 then
+                editinghue = true
+                X = (option.hue.AbsolutePosition.X + option.hue.AbsoluteSize.X) - option.hue.AbsolutePosition.X
+                X = (Input.Position.X - option.hue.AbsolutePosition.X) / X
+                X = X < 0 and 0 or X > 0.995 and 0.995 or X
+                option:updateVisuals(Color3.fromHSV(1 - X, sat, val))
+            end
+        end
+    )
+
+    inputService.InputChanged:connect(
+        function(Input)
+            if Input.UserInputType == Enum.UserInputType.MouseMovement and editinghue then
+                X = (option.hue.AbsolutePosition.X + option.hue.AbsoluteSize.X) - option.hue.AbsolutePosition.X
+                X = (Input.Position.X - option.hue.AbsolutePosition.X) / X
+                X = X <= 0 and 0 or X >= 0.995 and 0.995 or X
+                option:updateVisuals(Color3.fromHSV(1 - X, sat, val))
+            end
+        end
+    )
+
+    option.hue.InputEnded:connect(
+        function(Input)
+            if Input.UserInputType == Enum.UserInputType.MouseButton1 then
+                editinghue = false
+            end
+        end
+    )
+
+    option.satval =
+        library:Create(
+        "ImageLabel",
+        {
+            ZIndex = 3,
+            Position = UDim2.new(0, 8, 0, 8),
+            Size = UDim2.new(1, -100, 1, -42),
+            BackgroundTransparency = 1,
+            BackgroundColor3 = Color3.fromHSV(hue, 1, 1),
+            BorderSizePixel = 0,
+            Image = "rbxassetid://4155801252",
+            ImageTransparency = 1,
+            ClipsDescendants = true,
+            Parent = option.mainHolder
+        }
+    )
+
+    option.satvalSlider =
+        library:Create(
+        "Frame",
+        {
+            ZIndex = 3,
+            AnchorPoint = Vector2.new(0.5, 0.5),
+            Position = UDim2.new(sat, 0, 1 - val, 0),
+            Size = UDim2.new(0, 4, 0, 4),
+            Rotation = 45,
+            BackgroundTransparency = 1,
+            BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+            Parent = option.satval
+        }
+    )
+
+    option.satval.InputBegan:connect(
+        function(Input)
+            if Input.UserInputType == Enum.UserInputType.MouseButton1 then
+                editingsatval = true
+                X = (option.satval.AbsolutePosition.X + option.satval.AbsoluteSize.X) - option.satval.AbsolutePosition.X
+                Y = (option.satval.AbsolutePosition.Y + option.satval.AbsoluteSize.Y) - option.satval.AbsolutePosition.Y
+                X = (Input.Position.X - option.satval.AbsolutePosition.X) / X
+                Y = (Input.Position.Y - option.satval.AbsolutePosition.Y) / Y
+                X = X <= 0.005 and 0.005 or X >= 1 and 1 or X
+                Y = Y <= 0 and 0 or Y >= 0.995 and 0.995 or Y
+                option:updateVisuals(Color3.fromHSV(hue, X, 1 - Y))
+            end
+        end
+    )
+
+    inputService.InputChanged:connect(
+        function(Input)
+            if Input.UserInputType == Enum.UserInputType.MouseMovement and editingsatval then
+                X = (option.satval.AbsolutePosition.X + option.satval.AbsoluteSize.X) - option.satval.AbsolutePosition.X
+                Y = (option.satval.AbsolutePosition.Y + option.satval.AbsoluteSize.Y) - option.satval.AbsolutePosition.Y
+                X = (Input.Position.X - option.satval.AbsolutePosition.X) / X
+                Y = (Input.Position.Y - option.satval.AbsolutePosition.Y) / Y
+                X = X <= 0.005 and 0.005 or X >= 1 and 1 or X
+                Y = Y <= 0 and 0 or Y >= 0.995 and 0.995 or Y
+                option:updateVisuals(Color3.fromHSV(hue, X, 1 - Y))
+            end
+        end
+    )
+
+    option.satval.InputEnded:connect(
+        function(Input)
+            if Input.UserInputType == Enum.UserInputType.MouseButton1 then
+                editingsatval = false
+            end
+        end
+    )
+
+    option.visualize2 =
+        library:Create(
+        "ImageLabel",
+        {
+            ZIndex = 3,
+            Position = UDim2.new(1, -8, 0, 8),
+            Size = UDim2.new(0, -80, 0, 80),
+            BackgroundTransparency = 1,
+            Image = "rbxassetid://3570695787",
+            ImageColor3 = currentColor,
+            ScaleType = Enum.ScaleType.Slice,
+            SliceCenter = Rect.new(100, 100, 100, 100),
+            SliceScale = 0.02,
+            Parent = option.mainHolder
+        }
+    )
+
+    option.resetColor =
+        library:Create(
+        "ImageLabel",
+        {
+            ZIndex = 3,
+            Position = UDim2.new(1, -8, 0, 92),
+            Size = UDim2.new(0, -80, 0, 18),
+            BackgroundTransparency = 1,
+            Image = "rbxassetid://3570695787",
+            ImageTransparency = 1,
+            ImageColor3 = Color3.fromRGB(20, 20, 20),
+            ScaleType = Enum.ScaleType.Slice,
+            SliceCenter = Rect.new(100, 100, 100, 100),
+            SliceScale = 0.02,
+            Parent = option.mainHolder
+        }
+    )
+
+    option.resetText =
+        library:Create(
+        "TextLabel",
+        {
+            ZIndex = 3,
+            Size = UDim2.new(1, 0, 1, 0),
+            BackgroundTransparency = 1,
+            Text = "Reset",
+            TextTransparency = 1,
+            Font = Enum.Font.Code,
+            TextSize = 15,
+            TextColor3 = Color3.fromRGB(255, 255, 255),
+            Parent = option.resetColor
+        }
+    )
+
+    option.resetColor.InputBegan:connect(
+        function(Input)
+            if Input.UserInputType == Enum.UserInputType.MouseButton1 and not rainbowEnabled then
+                previousColors = {originalColor}
+                option:SetColor(originalColor)
+            end
+            if Input.UserInputType == Enum.UserInputType.MouseMovement and not dragging then
+                tweenService:Create(
+                    option.resetColor,
+                    TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                    {ImageColor3 = Color3.fromRGB(10, 10, 10)}
+                ):Play()
+            end
+        end
+    )
+
+    option.resetColor.InputEnded:connect(
+        function(Input)
+            if Input.UserInputType == Enum.UserInputType.MouseMovement and not dragging then
+                tweenService:Create(
+                    option.resetColor,
+                    TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                    {ImageColor3 = Color3.fromRGB(20, 20, 20)}
+                ):Play()
+            end
+        end
+    )
+
+    option.undoColor =
+        library:Create(
+        "ImageLabel",
+        {
+            ZIndex = 3,
+            Position = UDim2.new(1, -8, 0, 112),
+            Size = UDim2.new(0, -80, 0, 18),
+            BackgroundTransparency = 1,
+            Image = "rbxassetid://3570695787",
+            ImageTransparency = 1,
+            ImageColor3 = Color3.fromRGB(20, 20, 20),
+            ScaleType = Enum.ScaleType.Slice,
+            SliceCenter = Rect.new(100, 100, 100, 100),
+            SliceScale = 0.02,
+            Parent = option.mainHolder
+        }
+    )
+
+    option.undoText =
+        library:Create(
+        "TextLabel",
+        {
+            ZIndex = 3,
+            Size = UDim2.new(1, 0, 1, 0),
+            BackgroundTransparency = 1,
+            Text = "Undo",
+            TextTransparency = 1,
+            Font = Enum.Font.Code,
+            TextSize = 15,
+            TextColor3 = Color3.fromRGB(255, 255, 255),
+            Parent = option.undoColor
+        }
+    )
+
+    option.undoColor.InputBegan:connect(
+        function(Input)
+            if Input.UserInputType == Enum.UserInputType.MouseButton1 and not rainbowEnabled then
+                local Num = #previousColors == 1 and 0 or 1
+                option:SetColor(previousColors[#previousColors - Num])
+                if #previousColors ~= 1 then
+                    table.remove(previousColors, #previousColors)
+                end
+            end
+            if Input.UserInputType == Enum.UserInputType.MouseMovement and not dragging then
+                tweenService:Create(
+                    option.undoColor,
+                    TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                    {ImageColor3 = Color3.fromRGB(10, 10, 10)}
+                ):Play()
+            end
+        end
+    )
+
+    option.undoColor.InputEnded:connect(
+        function(Input)
+            if Input.UserInputType == Enum.UserInputType.MouseMovement and not dragging then
+                tweenService:Create(
+                    option.undoColor,
+                    TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                    {ImageColor3 = Color3.fromRGB(20, 20, 20)}
+                ):Play()
+            end
+        end
+    )
+
+    option.setColor =
+        library:Create(
+        "ImageLabel",
+        {
+            ZIndex = 3,
+            Position = UDim2.new(1, -8, 0, 132),
+            Size = UDim2.new(0, -80, 0, 18),
+            BackgroundTransparency = 1,
+            Image = "rbxassetid://3570695787",
+            ImageTransparency = 1,
+            ImageColor3 = Color3.fromRGB(20, 20, 20),
+            ScaleType = Enum.ScaleType.Slice,
+            SliceCenter = Rect.new(100, 100, 100, 100),
+            SliceScale = 0.02,
+            Parent = option.mainHolder
+        }
+    )
+
+    option.setText =
+        library:Create(
+        "TextLabel",
+        {
+            ZIndex = 3,
+            Size = UDim2.new(1, 0, 1, 0),
+            BackgroundTransparency = 1,
+            Text = "Set",
+            TextTransparency = 1,
+            Font = Enum.Font.Code,
+            TextSize = 15,
+            TextColor3 = Color3.fromRGB(255, 255, 255),
+            Parent = option.setColor
+        }
+    )
+
+    option.setColor.InputBegan:connect(
+        function(Input)
+            if Input.UserInputType == Enum.UserInputType.MouseButton1 and not rainbowEnabled then
+                table.insert(previousColors, currentColor)
+                option:SetColor(currentColor)
+            end
+            if Input.UserInputType == Enum.UserInputType.MouseMovement and not dragging then
+                tweenService:Create(
+                    option.setColor,
+                    TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                    {ImageColor3 = Color3.fromRGB(10, 10, 10)}
+                ):Play()
+            end
+        end
+    )
+
+    option.setColor.InputEnded:connect(
+        function(Input)
+            if Input.UserInputType == Enum.UserInputType.MouseMovement and not dragging then
+                tweenService:Create(
+                    option.setColor,
+                    TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                    {ImageColor3 = Color3.fromRGB(20, 20, 20)}
+                ):Play()
+            end
+        end
+    )
+
+    option.rainbow =
+        library:Create(
+        "ImageLabel",
+        {
+            ZIndex = 3,
+            Position = UDim2.new(1, -8, 0, 152),
+            Size = UDim2.new(0, -80, 0, 18),
+            BackgroundTransparency = 1,
+            Image = "rbxassetid://3570695787",
+            ImageTransparency = 1,
+            ImageColor3 = Color3.fromRGB(20, 20, 20),
+            ScaleType = Enum.ScaleType.Slice,
+            SliceCenter = Rect.new(100, 100, 100, 100),
+            SliceScale = 0.02,
+            Parent = option.mainHolder
+        }
+    )
+
+    option.rainbowText =
+        library:Create(
+        "TextLabel",
+        {
+            ZIndex = 3,
+            Size = UDim2.new(1, 0, 1, 0),
+            BackgroundTransparency = 1,
+            Text = "Rainbow",
+            TextTransparency = 1,
+            Font = Enum.Font.Code,
+            TextSize = 15,
+            TextColor3 = Color3.fromRGB(255, 255, 255),
+            Parent = option.rainbow
+        }
+    )
+
+    option.rainbow.InputBegan:connect(
+        function(Input)
+            if Input.UserInputType == Enum.UserInputType.MouseButton1 then
+                rainbowEnabled = not rainbowEnabled
+                if rainbowEnabled then
+                    rainbowLoop =
+                        runService.Heartbeat:connect(
+                        function()
+                            option:SetColor(chromaColor)
+                            option.rainbowText.TextColor3 = chromaColor
+                        end
+                    )
+                else
+                    rainbowLoop:Disconnect()
+                    option:SetColor(previousColors[#previousColors])
+                    option.rainbowText.TextColor3 = Color3.fromRGB(255, 255, 255)
+                end
+            end
+            if Input.UserInputType == Enum.UserInputType.MouseMovement and not dragging then
+                tweenService:Create(
+                    option.rainbow,
+                    TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                    {ImageColor3 = Color3.fromRGB(10, 10, 10)}
+                ):Play()
+            end
+        end
+    )
+
+    option.rainbow.InputEnded:connect(
+        function(Input)
+            if Input.UserInputType == Enum.UserInputType.MouseMovement and not dragging then
+                tweenService:Create(
+                    option.rainbow,
+                    TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                    {ImageColor3 = Color3.fromRGB(20, 20, 20)}
+                ):Play()
+            end
+        end
+    )
+
+    return option
+end
+
+local function createColor(option, parent, holder)
+    option.main =
+        library:Create(
+        "TextLabel",
+        {
+            LayoutOrder = option.position,
+            Size = UDim2.new(1, 0, 0, 31),
+            BackgroundTransparency = 1,
+            Text = " " .. option.text,
+            TextSize = 17,
+            Font = Enum.Font.Gotham,
+            TextColor3 = Color3.fromRGB(255, 255, 255),
+            TextXAlignment = Enum.TextXAlignment.Left,
+            Parent = parent.content
+        }
+    )
+
+    local colorBoxOutline =
+        library:Create(
+        "ImageLabel",
+        {
+            Position = UDim2.new(1, -6, 0, 4),
+            Size = UDim2.new(-1, 10, 1, -10),
+            SizeConstraint = Enum.SizeConstraint.RelativeYY,
+            BackgroundTransparency = 1,
+            Image = "rbxassetid://3570695787",
+            ImageColor3 = Color3.fromRGB(100, 100, 100),
+            ScaleType = Enum.ScaleType.Slice,
+            SliceCenter = Rect.new(100, 100, 100, 100),
+            SliceScale = 0.02,
+            Parent = option.main
+        }
+    )
+
+    option.visualize =
+        library:Create(
+        "ImageLabel",
+        {
+            Position = UDim2.new(0, 2, 0, 2),
+            Size = UDim2.new(1, -4, 1, -4),
+            BackgroundTransparency = 1,
+            Image = "rbxassetid://3570695787",
+            ImageColor3 = option.color,
+            ScaleType = Enum.ScaleType.Slice,
+            SliceCenter = Rect.new(100, 100, 100, 100),
+            SliceScale = 0.02,
+            Parent = colorBoxOutline
+        }
+    )
+
+    local inContact
+    option.main.InputBegan:connect(
+        function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                if not option.mainHolder then
+                    createColorPickerWindow(option)
+                end
+                if library.activePopup then
+                    library.activePopup:Close()
+                end
+                local position = option.main.AbsolutePosition
+                option.mainHolder.Position = UDim2.new(0, position.X - 5, 0, position.Y - 10)
+                option.open = true
+                option.mainHolder.Visible = true
+                library.activePopup = option
+                tweenService:Create(
+                    option.mainHolder,
+                    TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+                    {ImageTransparency = 0, Position = UDim2.new(0, position.X - 5, 0, position.Y - 4)}
+                ):Play()
+                tweenService:Create(
+                    option.mainHolder,
+                    TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out, 0, false, 0.1),
+                    {Position = UDim2.new(0, position.X - 5, 0, position.Y + 1)}
+                ):Play()
+                tweenService:Create(
+                    option.satval,
+                    TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+                    {BackgroundTransparency = 0}
+                ):Play()
+                for _, object in next, option.mainHolder:GetDescendants() do
+                    if object:IsA "TextLabel" then
+                        tweenService:Create(
+                            object,
+                            TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                            {TextTransparency = 0}
+                        ):Play()
+                    elseif object:IsA "ImageLabel" then
+                        tweenService:Create(
+                            object,
+                            TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                            {ImageTransparency = 0}
+                        ):Play()
+                    elseif object:IsA "Frame" then
+                        tweenService:Create(
+                            object,
+                            TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                            {BackgroundTransparency = 0}
+                        ):Play()
+                    end
+                end
+            end
+            if input.UserInputType == Enum.UserInputType.MouseMovement then
+                inContact = true
+                if not option.open then
+                    tweenService:Create(
+                        colorBoxOutline,
+                        TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                        {ImageColor3 = Color3.fromRGB(140, 140, 140)}
+                    ):Play()
+                end
+            end
+        end
+    )
+
+    option.main.InputEnded:connect(
+        function(input)
+            if input.UserInputType == Enum.UserInputType.MouseMovement then
+                inContact = true
+                if not option.open then
+                    tweenService:Create(
+                        colorBoxOutline,
+                        TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                        {ImageColor3 = Color3.fromRGB(100, 100, 100)}
+                    ):Play()
+                end
+            end
+        end
+    )
+
+    function option:SetColor(newColor)
+        if self.mainHolder then
+            self:updateVisuals(newColor)
+        end
+        self.visualize.ImageColor3 = newColor
+        library.flags[self.flag] = newColor
+        self.color = newColor
+        self.callback(newColor)
+    end
+
+    function option:Close()
+        library.activePopup = nil
+        self.open = false
+        local position = self.main.AbsolutePosition
+        tweenService:Create(
+            self.mainHolder,
+            TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+            {ImageTransparency = 1, Position = UDim2.new(0, position.X - 5, 0, position.Y - 10)}
+        ):Play()
+        tweenService:Create(
+            self.satval,
+            TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+            {BackgroundTransparency = 1}
+        ):Play()
+        for _, object in next, self.mainHolder:GetDescendants() do
+            if object:IsA "TextLabel" then
+                tweenService:Create(
+                    object,
+                    TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                    {TextTransparency = 1}
+                ):Play()
+            elseif object:IsA "ImageLabel" then
+                tweenService:Create(
+                    object,
+                    TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                    {ImageTransparency = 1}
+                ):Play()
+            elseif object:IsA "Frame" then
+                tweenService:Create(
+                    object,
+                    TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+                    {BackgroundTransparency = 1}
+                ):Play()
+            end
+        end
+        delay(
+            0.3,
+            function()
+                if not self.open then
+                    self.mainHolder.Visible = false
+                end
+            end
+        )
+    end
+end
+
+local function loadOptions(option, holder)
+    for _, newOption in next, option.options do
+        if newOption.type == "label" then
+            createLabel(newOption, option)
+        elseif newOption.type == "toggle" then
+            createToggle(newOption, option)
+        elseif newOption.type == "button" then
+            createButton(newOption, option)
+        elseif newOption.type == "list" then
+            createList(newOption, option, holder)
+        elseif newOption.type == "box" then
+            createBox(newOption, option)
+        elseif newOption.type == "bind" then
+            createBind(newOption, option)
+        elseif newOption.type == "slider" then
+            createSlider(newOption, option)
+        elseif newOption.type == "color" then
+            createColor(newOption, option, holder)
+        elseif newOption.type == "folder" then
+            newOption:init()
+        end
+    end
+end
+
+local function getFnctions(parent)
+    function parent:AddLabel(option)
+        option = typeof(option) == "table" and option or {}
+        option.text = tostring(option.text)
+        option.type = "label"
+        option.position = #self.options
+        table.insert(self.options, option)
+
+        return option
+    end
+
+    function parent:AddToggle(option)
+        option = typeof(option) == "table" and option or {}
+        option.text = tostring(option.text)
+        option.state = typeof(option.state) == "boolean" and option.state or false
+        option.callback = typeof(option.callback) == "function" and option.callback or function()
+            end
+        option.type = "toggle"
+        option.position = #self.options
+        option.flag = option.flag or option.text
+        library.flags[option.flag] = option.state
+        table.insert(self.options, option)
+
+        return option
+    end
+
+    function parent:AddButton(option)
+        option = typeof(option) == "table" and option or {}
+        option.text = tostring(option.text)
+        option.callback = typeof(option.callback) == "function" and option.callback or function()
+            end
+        option.type = "button"
+        option.position = #self.options
+        option.flag = option.flag or option.text
+        table.insert(self.options, option)
+
+        return option
+    end
+
+    function parent:AddBind(option)
+        option = typeof(option) == "table" and option or {}
+        option.text = tostring(option.text)
+        option.key = (option.key and option.key.Name) or option.key or "F"
+        option.hold = typeof(option.hold) == "boolean" and option.hold or false
+        option.callback = typeof(option.callback) == "function" and option.callback or function()
+            end
+        option.type = "bind"
+        option.position = #self.options
+        option.flag = option.flag or option.text
+        library.flags[option.flag] = option.key
+        table.insert(self.options, option)
+
+        return option
+    end
+
+    function parent:AddSlider(option)
+        option = typeof(option) == "table" and option or {}
+        option.text = tostring(option.text)
+        option.min = typeof(option.min) == "number" and option.min or 0
+        option.max = typeof(option.max) == "number" and option.max or 0
+        option.dual = typeof(option.dual) == "boolean" and option.dual or false
+        option.value =
+            math.clamp(typeof(option.value) == "number" and option.value or option.min, option.min, option.max)
+        option.value2 = typeof(option.value2) == "number" and option.value2 or option.max
+        option.callback = typeof(option.callback) == "function" and option.callback or function()
+            end
+        option.float = typeof(option.value) == "number" and option.float or 1
+        option.type = "slider"
+        option.position = #self.options
+        option.flag = option.flag or option.text
+        library.flags[option.flag] = option.value
+        table.insert(self.options, option)
+
+        return option
+    end
+
+    function parent:AddList(option)
+        option = typeof(option) == "table" and option or {}
+        option.text = tostring(option.text)
+        option.values = typeof(option.values) == "table" and option.values or {}
+        option.value = tostring(option.value or option.values[1] or "")
+        option.callback = typeof(option.callback) == "function" and option.callback or function()
+            end
+        option.open = false
+        option.type = "list"
+        option.position = #self.options
+        option.flag = option.flag or option.text
+        library.flags[option.flag] = option.value
+        table.insert(self.options, option)
+
+        return option
+    end
+
+    function parent:AddBox(option)
+        option = typeof(option) == "table" and option or {}
+        option.text = tostring(option.text)
+        option.value = tostring(option.value or "")
+        option.callback = typeof(option.callback) == "function" and option.callback or function()
+            end
+        option.type = "box"
+        option.position = #self.options
+        option.flag = option.flag or option.text
+        library.flags[option.flag] = option.value
+        table.insert(self.options, option)
+
+        return option
+    end
+
+    function parent:AddColor(option)
+        option = typeof(option) == "table" and option or {}
+        option.text = tostring(option.text)
+        option.color =
+            typeof(option.color) == "table" and
+            Color3.new(tonumber(option.color[1]), tonumber(option.color[2]), tonumber(option.color[3])) or
+            option.color or
+            Color3.new(255, 255, 255)
+        option.callback = typeof(option.callback) == "function" and option.callback or function()
+            end
+        option.open = false
+        option.type = "color"
+        option.position = #self.options
+        option.flag = option.flag or option.text
+        library.flags[option.flag] = option.color
+        table.insert(self.options, option)
+
+        return option
+    end
+
+    function parent:AddFolder(title)
+        local option = {}
+        option.title = tostring(title)
+        option.options = {}
+        option.open = false
+        option.type = "folder"
+        option.position = #self.options
+        table.insert(self.options, option)
+
+        getFnctions(option)
+
+        function option:init()
+            createOptionHolder(self.title, parent.content, self, true)
+            loadOptions(self, parent)
+        end
+
+        return option
+    end
+end
+
+function library:CreateWindow(title)
+    local window = {
+        title = tostring(title),
+        options = {},
+        open = true,
+        canInit = true,
+        init = false,
+        position = #self.windows
+    }
+    getFnctions(window)
+
+    table.insert(library.windows, window)
+
+    return window
+end
+
+local UIToggle
+local UnlockMouse
+function library:Init()
+    self.base = self.base or self:Create("ScreenGui")
+
+    self.base.Parent = game:GetService "CoreGui"
+
+    self.cursor =
+        self.cursor or
+        self:Create(
+            "Frame",
+            {
+                ZIndex = 100,
+                AnchorPoint = Vector2.new(0, 0),
+                Size = UDim2.new(0, 5, 0, 5),
+                BackgroundColor3 = Color3.fromRGB(255, 255, 255),
+                Parent = self.base
+            }
+        )
+
+    for _, window in next, self.windows do
+        if window.canInit and not window.init then
+            window.init = true
+            createOptionHolder(window.title, self.base, window)
+            loadOptions(window)
+        end
+    end
+end
+
+function library:Close()
+    self.open = not self.open
+    self.cursor.Visible = self.open
+    if self.activePopup then
+        self.activePopup:Close()
+    end
+    for _, window in next, self.windows do
+        if window.main then
+            window.main.Visible = self.open
+        end
+    end
+end
+
+inputService.InputBegan:connect(
+    function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            if library.activePopup then
+                if
+                    input.Position.X < library.activePopup.mainHolder.AbsolutePosition.X or
+                        input.Position.Y < library.activePopup.mainHolder.AbsolutePosition.Y
+                 then
+                    library.activePopup:Close()
+                end
+            end
+            if library.activePopup then
+                if
+                    input.Position.X >
+                        library.activePopup.mainHolder.AbsolutePosition.X +
+                            library.activePopup.mainHolder.AbsoluteSize.X or
+                        input.Position.Y >
+                            library.activePopup.mainHolder.AbsolutePosition.Y +
+                                library.activePopup.mainHolder.AbsoluteSize.Y
+                 then
+                    library.activePopup:Close()
+                end
+            end
+        end
+    end
+)
+
+inputService.InputChanged:connect(
+    function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement and library.cursor then
+            local mouse = inputService:GetMouseLocation() + Vector2.new(0, -36)
+            library.cursor.Position = UDim2.new(0, mouse.X - 2, 0, mouse.Y - 2)
+        end
+        if input == dragInput and dragging then
+            update(input)
+        end
+    end
+)
+
+return library
