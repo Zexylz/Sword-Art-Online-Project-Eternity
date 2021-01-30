@@ -1,0 +1,258 @@
+local Library =
+    loadstring(
+    game:HttpGet(
+       "https://raw.githubusercontent.com/Zexylz/Sword-Art-Online-Project-Eternity/Ui-Library/WeebwareUI?token=AQR5VFWVKPLZF6VAK53MV63ACWIL4",
+        true
+    )
+)()
+
+for i, v in pairs(getconnections(game:GetService("Players").LocalPlayer.Idled)) do
+    v:Disable()
+end
+
+for _, v in pairs(game:GetService("CoreGui"):GetChildren()) do
+    if v:IsA("ScreenGui") and v.Name == "ScreenGui" then
+        v:Destroy()
+    end
+end
+
+s = {}
+setmetatable(
+    s,
+    {
+        __index = function(_, service)
+            return game:GetService(service)
+        end,
+        __newindex = function(t, i)
+            t[i] = nil
+            return
+        end
+    }
+)
+
+local Floor = {
+    [209197169] = "1",
+    [201150887] = "2",
+    [67468119] = "3",
+    [334521328] = "4"
+}
+
+local WhitelistedFloors = {
+    [209197169] = "1"
+}
+
+Whitelisted = WhitelistedFloors[game.PlaceId] or (function()
+        f = "No floor Found"
+    end)
+
+local window = Library:CreateWindow("Weebware")
+
+window:AddToggle(
+    {
+        text = "Mob Aura",
+        flag = "Mob",
+        state = false,
+        callback = function(func)
+            getgenv().MobAura = func
+            while getgenv().MobAura do
+                for _, v in pairs(s["Workspace"].Mobs:GetChildren()) do
+                    if v:FindFirstChild("Head") then
+                        s["ReplicatedStorage"].Weapon:FireServer("Hit", v.Head)
+                        s["RunService"].RenderStepped:Wait()
+                    end
+                end
+            end
+        end
+    }
+)
+if Whitelisted == "1" then
+    window:AddToggle(
+        {
+            text = "Level Autofarm",
+            flag = "Lvl",
+            state = false,
+            callback = function(func)
+                getgenv().LevelToggle = func
+                while getgenv().LevelToggle do
+                    s["ReplicatedStorage"].Menu:FireServer(
+                        "GiveQuest",
+                        {game.ReplicatedStorage.DB["Show Your Skills (4)"]}
+                    )
+                    s["ReplicatedStorage"].Menu:FireServer("FinishQuest")
+                    s["RunService"].RenderStepped:Wait()
+                end
+            end
+        }
+    )
+
+    window:AddToggle(
+        {
+            text = "Col Autofarm",
+            flag = "Col",
+            state = false,
+            callback = function(func)
+                getgenv().ColToggle = func
+                while getgenv().ColToggle do
+                    s["ReplicatedStorage"].Menu:FireServer("GiveQuest", {game.ReplicatedStorage.DB["Return to Lynx"]})
+                    s["ReplicatedStorage"].Menu:FireServer("FinishQuest")
+                    s["RunService"].RenderStepped:Wait()
+                end
+            end
+        }
+    )
+
+    window:AddToggle(
+        {
+            text = "Blacksmith Autofarm",
+            flag = "Black",
+            state = false,
+            callback = function(func)
+                getgenv().BlackSmithAutoFarm = func
+                while getgenv().BlackSmithAutoFarm do
+                    s["ReplicatedStorage"].Weapon:FireServer("Create", table_1)
+                    s["ReplicatedStorage"].Menu:FireServer("BuyItem", s["ReplicatedStorage"].DB["Iron Bar"])
+                    s["ReplicatedStorage"].Menu:FireServer("GiveQuest", {game.ReplicatedStorage.DB["Return to Lynx"]})
+                    s["ReplicatedStorage"].Menu:FireServer("FinishQuest")
+                    s["RunService"].RenderStepped:Wait()
+                end
+            end
+        }
+    )
+end
+
+window:AddToggle(
+    {
+        text = "Stamina Autofarm",
+        flag = "Stamina",
+        state = false,
+        callback = function(func)
+            getgenv().StaminaToggle = func
+            while getgenv().StaminaToggle do
+                s["ReplicatedStorage"].Menu:FireServer("StartRunning")
+                s["RunService"].RenderStepped:Wait()
+            end
+        end
+    }
+)
+
+window:AddButton(
+    {
+        text = "Infinite Stamina",
+        flag = "Inf",
+        callback = function(func)
+            game.ReplicatedStorage.leaderstat[game.Players.LocalPlayer.UserId].Stamina.Changed:connect(
+                function()
+                    game.ReplicatedStorage.leaderstat[game.Players.LocalPlayer.UserId].Stamina.Value = 120
+                end
+            )
+        end
+    }
+)
+
+window:AddButton(
+    {
+        text = "Break Mob",
+        flag = "Break",
+        callback = function(func)
+            s["RunService"].RenderStepped:Connect(
+                function()
+                    for _, v in pairs(s["Workspace"].Mobs:GetChildren()) do
+                        v.Humanoid.WalkSpeed = 0
+                        v.Humanoid.Sit = true
+                    end
+                end
+            )
+        end
+    }
+)
+
+window:AddButton(
+    {
+        text = "Destroy All Mob",
+        flag = "Destroy",
+        callback = function(func)
+            s["RunService"].RenderStepped:Connect(
+                function()
+                    for _, v in pairs(s["Workspace"].Mobs:GetChildren()) do
+                        v.Humanoid.WalkSpeed = 99e99
+                        v.Humanoid.Sit = false
+                    end
+                end
+            )
+        end
+    }
+)
+
+window:AddList(
+    {
+        text = "Floor Teleport",
+        value = Floor[game.PlaceId],
+        values = {"1", "2", "3", "4"},
+        callback = function(func)
+            s["ReplicatedStorage"].Travel:FireServer(func)
+        end
+    }
+)
+
+window:AddSlider(
+    {
+        text = "Walkspeed",
+        flag = "speed",
+        value = game:GetService("ReplicatedStorage").leaderstat[game.Players.LocalPlayer.UserId].Runspeed.Value,
+        min = 10,
+        max = 200,
+        callback = function(value)
+            game:GetService("ReplicatedStorage").leaderstat[game.Players.LocalPlayer.UserId].Runspeed.Value = value
+        end
+    }
+)
+
+window:AddBind(
+    {
+        text = "Toggle UI",
+        flag = "Bind",
+        key = Enum.KeyCode.RightShift,
+        callback = function(a)
+            Library:Close()
+        end
+    }
+)
+
+Library:Init()
+
+--[[window:AddButton({text = "Button", flag = "button", callback = function(a)
+    
+end})
+
+Window:AddToggle({text = "owo", flag = "Toggle", state = false, callback = function(a)
+    print(a)
+end})
+
+window:AddList({text = "list", value = "Value", values = {"Value1", "Value2" "Value3" "Value4" }, callback = function(a)
+    
+end})
+
+window:AddBox({text = "Box", flag = "Box", value = "Value", callback = function(a)
+
+end})
+
+wndow:AddSlider({text = "Slider", flag = "Slider", value = 100, min = 20, max = 200, float = 0.3, callback = function(a)
+
+end})
+
+wndow:AddSlider({text = "Slider", flag = "Slider1", value = 100, min = 20, max = 200, callback = function(a)
+
+end})
+
+window:AddBind({text = "Bind", flag = "Bind", Enum.KeyCode.RightShift, callback = function(a)
+
+end})
+
+window:AddBind({text = "Bind", flag = "Bind", hold = true, Enum.KeyCode.RightShift, callback = function(a)
+
+end})
+
+window:AddColor({text = "Color", flag = "color", color = Color3.fromRGB(255,255,255), callback = function(a)
+
+end})
+--]]
