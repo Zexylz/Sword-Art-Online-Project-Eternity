@@ -1,7 +1,7 @@
 local Library =
     loadstring(
     game:HttpGet(
-       "https://raw.githubusercontent.com/Zexylz/Sword-Art-Online-Project-Eternity/Ui-Library/WeebwareUI?token=AQR5VFWVKPLZF6VAK53MV63ACWIL4",
+       "https://raw.githubusercontent.com/Zexylz/Sword-Art-Online-Project-Eternity/Ui-Library/WeebwareUI?token=AQR5VFXZZDQVRW3NQRXKAP3ACWJRM",
         true
     )
 )()
